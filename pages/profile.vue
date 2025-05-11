@@ -1,7 +1,13 @@
 <template>
   <div>
     <div class="flex items-center space-x-6 mb-8">
-      <div class="w-32 h-32 bg-gray-600 rounded-full"></div>
+      <img 
+        v-if="userProfile.images?.[0]?.url" 
+        :src="userProfile.images[0].url" 
+        :alt="userProfile.display_name"
+        class="w-32 h-32 rounded-full object-cover"
+      />
+      <div class="w-32 h-32 bg-gray-600 rounded-full" v-else></div>
       <div>
         <h1 class="text-3xl font-bold">{{ userProfile.display_name }}</h1>
         <p class="text-gray-400">{{ userProfile.followers?.total }} followers</p>
@@ -11,10 +17,16 @@
     <!-- User Stats -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
       <div class="bg-gray-800 p-6 rounded-lg">
-        <h3 class="text-xl font-semibold mb-2">Top Artists</h3>
+        <h3 class="text-xl font-semibold mb-4">Top Artists</h3>
         <div class="space-y-4">
           <div v-for="artist in topArtists" :key="artist.id" class="flex items-center space-x-4">
-            <div class="w-12 h-12 bg-gray-600 rounded-full"></div>
+            <img 
+              v-if="artist.images?.[0]?.url" 
+              :src="artist.images[0].url" 
+              :alt="artist.name"
+              class="w-12 h-12 rounded-full object-cover"
+            />
+            <div class="w-12 h-12 bg-gray-600 rounded-full" v-else></div>
             <div>
               <p class="font-medium">{{ artist.name }}</p>
               <p class="text-sm text-gray-400">Artist</p>
@@ -24,10 +36,16 @@
       </div>
 
       <div class="bg-gray-800 p-6 rounded-lg">
-        <h3 class="text-xl font-semibold mb-2">Top Tracks</h3>
+        <h3 class="text-xl font-semibold mb-4">Top Tracks</h3>
         <div class="space-y-4">
           <div v-for="track in topTracks" :key="track.id" class="flex items-center space-x-4">
-            <div class="w-12 h-12 bg-gray-600 rounded"></div>
+            <img 
+              v-if="track.album?.images?.[0]?.url" 
+              :src="track.album.images[0].url" 
+              :alt="track.name"
+              class="w-12 h-12 rounded object-cover"
+            />
+            <div class="w-12 h-12 bg-gray-600 rounded" v-else></div>
             <div>
               <p class="font-medium">{{ track.name }}</p>
               <p class="text-sm text-gray-400">{{ track.artists[0].name }}</p>
@@ -37,10 +55,16 @@
       </div>
 
       <div class="bg-gray-800 p-6 rounded-lg">
-        <h3 class="text-xl font-semibold mb-2">Recently Played</h3>
+        <h3 class="text-xl font-semibold mb-4">Recently Played</h3>
         <div class="space-y-4">
           <div v-for="item in recentlyPlayed" :key="item.track.id" class="flex items-center space-x-4">
-            <div class="w-12 h-12 bg-gray-600 rounded"></div>
+            <img 
+              v-if="item.track.album?.images?.[0]?.url" 
+              :src="item.track.album.images[0].url" 
+              :alt="item.track.name"
+              class="w-12 h-12 rounded object-cover"
+            />
+            <div class="w-12 h-12 bg-gray-600 rounded" v-else></div>
             <div>
               <p class="font-medium">{{ item.track.name }}</p>
               <p class="text-sm text-gray-400">{{ item.track.artists[0].name }}</p>
