@@ -2,12 +2,12 @@
   <div class="min-h-screen">
     <!-- Search Input -->
     <div class="sticky top-0 z-10 bg-black/80 backdrop-blur-md p-4">
-      <div class="relative">
+      <div class="relative max-w-2xl mx-auto">
         <input
           v-model="searchQuery"
           type="text"
           placeholder="Search for tracks, artists, albums, playlists, or user profiles..."
-          class="w-full bg-gray-800 text-white px-4 py-3 rounded-lg pl-12 focus:outline-none focus:ring-2 focus:ring-green-500"
+          class="w-full bg-gray-800/50 text-white px-4 py-3 rounded-full pl-12 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-300"
           @input="handleSearch"
         />
         <svg class="w-6 h-6 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -22,7 +22,7 @@
     </div>
 
     <!-- Search Results -->
-    <div v-else-if="searchQuery" class="p-8">
+    <div v-else-if="searchQuery" class="p-8 max-w-7xl mx-auto">
       <!-- User Profiles -->
       <div v-if="displayedUsers.length > 0" class="mb-12">
         <div class="flex justify-between items-center mb-6">
@@ -37,17 +37,19 @@
         </div>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
           <div v-for="user in displayedUsers" :key="user.id" 
-            class="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
+            class="bg-gray-800/50 p-4 rounded-lg hover:bg-gray-700/50 transition-all duration-300 cursor-pointer group"
             @click="navigateToUser(user.id)"
           >
-            <img 
-              v-if="user.images?.[0]?.url" 
-              :src="user.images[0].url" 
-              :alt="user.display_name"
-              class="w-full aspect-square object-cover rounded mb-4"
-            />
-            <div v-else class="w-full aspect-square bg-gray-700 rounded mb-4 flex items-center justify-center">
-              <span class="text-2xl text-gray-400">{{ user.display_name?.charAt(0)?.toUpperCase() }}</span>
+            <div class="relative aspect-square mb-4 overflow-hidden rounded-lg">
+              <img 
+                v-if="user.images?.[0]?.url" 
+                :src="user.images[0].url" 
+                :alt="user.display_name"
+                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+              />
+              <div v-else class="w-full h-full bg-gray-700 flex items-center justify-center">
+                <span class="text-2xl text-gray-400">{{ user.display_name?.charAt(0)?.toUpperCase() }}</span>
+              </div>
             </div>
             <h3 class="font-medium truncate">{{ user.display_name }}</h3>
             <p class="text-sm text-gray-400">{{ user.followers?.total }} followers</p>
@@ -58,28 +60,33 @@
       <!-- Tracks -->
       <div v-if="displayedTracks.length > 0" class="mb-12">
         <h2 class="text-2xl font-bold mb-6">Tracks</h2>
-        <div class="space-y-4">
+        <div class="space-y-2">
           <div v-for="track in displayedTracks" :key="track?.id" 
-            class="flex items-center space-x-4 p-4 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
+            class="flex items-center space-x-4 p-4 rounded-lg hover:bg-gray-800/50 transition-all duration-300 cursor-pointer group"
             @click="playTrack(track?.uri)"
           >
-            <img 
-              v-if="track?.album?.images?.[0]?.url" 
-              :src="track.album.images[0].url" 
-              :alt="track?.name"
-              class="w-12 h-12 rounded"
-            />
-            <div class="flex-1">
-              <p class="font-medium">{{ track?.name }}</p>
-              <p class="text-sm text-gray-400">{{ track?.artists?.map(artist => artist?.name).filter(Boolean).join(', ') }}</p>
+            <div class="relative w-12 h-12 flex-shrink-0">
+              <img 
+                v-if="track?.album?.images?.[0]?.url" 
+                :src="track.album.images[0].url" 
+                :alt="track?.name"
+                class="w-full h-full object-cover rounded transition-transform duration-300 group-hover:scale-110"
+              />
+              <div v-else class="w-full h-full bg-gray-700 rounded flex items-center justify-center">
+                <span class="text-lg text-gray-400">{{ track?.name?.charAt(0)?.toUpperCase() }}</span>
+              </div>
             </div>
-            <span class="text-gray-400">{{ formatDuration(track?.duration_ms || 0) }}</span>
+            <div class="flex-1 min-w-0">
+              <p class="font-medium truncate">{{ track?.name }}</p>
+              <p class="text-sm text-gray-400 truncate">{{ track?.artists?.map(artist => artist?.name).filter(Boolean).join(', ') }}</p>
+            </div>
+            <span class="text-gray-400 text-sm">{{ formatDuration(track?.duration_ms || 0) }}</span>
           </div>
         </div>
         <button 
           v-if="tracks.length > displayedTracks.length"
           @click="loadMoreTracks"
-          class="mt-4 text-green-500 hover:text-green-400"
+          class="mt-4 text-green-500 hover:text-green-400 transition-colors"
         >
           See More Tracks
         </button>
@@ -90,17 +97,19 @@
         <h2 class="text-2xl font-bold mb-6">Artists</h2>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           <div v-for="artist in displayedArtists" :key="artist?.id" 
-            class="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
+            class="bg-gray-800/50 p-4 rounded-lg hover:bg-gray-700/50 transition-all duration-300 cursor-pointer group"
             @click="navigateToArtist(artist?.id)"
           >
-            <img 
-              v-if="artist?.images?.[0]?.url" 
-              :src="artist.images[0].url" 
-              :alt="artist?.name"
-              class="w-full aspect-square object-cover rounded-full mb-4"
-            />
-            <div v-else class="w-full aspect-square bg-gray-700 rounded-full mb-4 flex items-center justify-center">
-              <span class="text-2xl text-gray-400">{{ artist?.name?.charAt(0)?.toUpperCase() }}</span>
+            <div class="relative aspect-square mb-4 overflow-hidden rounded-full">
+              <img 
+                v-if="artist?.images?.[0]?.url" 
+                :src="artist.images[0].url" 
+                :alt="artist?.name"
+                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+              />
+              <div v-else class="w-full h-full bg-gray-700 flex items-center justify-center">
+                <span class="text-2xl text-gray-400">{{ artist?.name?.charAt(0)?.toUpperCase() }}</span>
+              </div>
             </div>
             <h3 class="font-medium truncate text-center">{{ artist?.name }}</h3>
             <p class="text-sm text-gray-400 text-center">Artist</p>
@@ -109,7 +118,7 @@
         <button 
           v-if="artists.length > displayedArtists.length"
           @click="loadMoreArtists"
-          class="mt-4 text-green-500 hover:text-green-400"
+          class="mt-4 text-green-500 hover:text-green-400 transition-colors"
         >
           See More Artists
         </button>
@@ -120,26 +129,28 @@
         <h2 class="text-2xl font-bold mb-6">Albums</h2>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           <div v-for="album in displayedAlbums" :key="album?.id" 
-            class="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
+            class="bg-gray-800/50 p-4 rounded-lg hover:bg-gray-700/50 transition-all duration-300 cursor-pointer group"
             @click="navigateToAlbum(album?.id)"
           >
-            <img 
-              v-if="album?.images?.[0]?.url" 
-              :src="album.images[0].url" 
-              :alt="album?.name"
-              class="w-full aspect-square object-cover rounded mb-4"
-            />
-            <div v-else class="w-full aspect-square bg-gray-700 rounded mb-4 flex items-center justify-center">
-              <span class="text-2xl text-gray-400">{{ album?.name?.charAt(0)?.toUpperCase() }}</span>
+            <div class="relative aspect-square mb-4 overflow-hidden rounded-lg">
+              <img 
+                v-if="album?.images?.[0]?.url" 
+                :src="album.images[0].url" 
+                :alt="album?.name"
+                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+              />
+              <div v-else class="w-full h-full bg-gray-700 flex items-center justify-center">
+                <span class="text-2xl text-gray-400">{{ album?.name?.charAt(0)?.toUpperCase() }}</span>
+              </div>
             </div>
             <h3 class="font-medium truncate">{{ album?.name }}</h3>
-            <p class="text-sm text-gray-400">{{ album?.artists?.map(artist => artist?.name).filter(Boolean).join(', ') }}</p>
+            <p class="text-sm text-gray-400 truncate">{{ album?.artists?.map(artist => artist?.name).filter(Boolean).join(', ') }}</p>
           </div>
         </div>
         <button 
           v-if="albums.length > displayedAlbums.length"
           @click="loadMoreAlbums"
-          class="mt-4 text-green-500 hover:text-green-400"
+          class="mt-4 text-green-500 hover:text-green-400 transition-colors"
         >
           See More Albums
         </button>
@@ -150,17 +161,19 @@
         <h2 class="text-2xl font-bold mb-6">Playlists</h2>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           <div v-for="playlist in displayedPlaylists" :key="playlist?.id" 
-            class="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
+            class="bg-gray-800/50 p-4 rounded-lg hover:bg-gray-700/50 transition-all duration-300 cursor-pointer group"
             @click="navigateToPlaylist(playlist?.id)"
           >
-            <img 
-              v-if="playlist?.images?.[0]?.url" 
-              :src="playlist.images[0].url" 
-              :alt="playlist?.name"
-              class="w-full aspect-square object-cover rounded mb-4"
-            />
-            <div v-else class="w-full aspect-square bg-gray-700 rounded mb-4 flex items-center justify-center">
-              <span class="text-2xl text-gray-400">{{ playlist?.name?.charAt(0)?.toUpperCase() }}</span>
+            <div class="relative aspect-square mb-4 overflow-hidden rounded-lg">
+              <img 
+                v-if="playlist?.images?.[0]?.url" 
+                :src="playlist.images[0].url" 
+                :alt="playlist?.name"
+                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+              />
+              <div v-else class="w-full h-full bg-gray-700 flex items-center justify-center">
+                <span class="text-2xl text-gray-400">{{ playlist?.name?.charAt(0)?.toUpperCase() }}</span>
+              </div>
             </div>
             <h3 class="font-medium truncate">{{ playlist?.name }}</h3>
             <p class="text-sm text-gray-400">By {{ playlist?.owner?.display_name }}</p>
@@ -169,7 +182,7 @@
         <button 
           v-if="playlists.length > displayedPlaylists.length"
           @click="loadMorePlaylists"
-          class="mt-4 text-green-500 hover:text-green-400"
+          class="mt-4 text-green-500 hover:text-green-400 transition-colors"
         >
           See More Playlists
         </button>
@@ -179,7 +192,11 @@
       <div v-if="!isLoading && !displayedTracks.length && !displayedArtists.length && !displayedAlbums.length && !displayedPlaylists.length && !displayedUsers.length" 
         class="text-center text-gray-400 py-12"
       >
-        No results found for "{{ searchQuery }}"
+        <svg class="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p class="text-xl">No results found for "{{ searchQuery }}"</p>
+        <p class="text-sm mt-2">Try different keywords or check your spelling</p>
       </div>
     </div>
   </div>
@@ -426,4 +443,28 @@ onMounted(() => {
   // Clear any existing search results
   resetResults()
 })
-</script> 
+</script>
+
+<style scoped>
+input[type="range"] {
+  -webkit-appearance: none;
+  height: 4px;
+  background: #4B5563;
+  border-radius: 2px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+</style> 
