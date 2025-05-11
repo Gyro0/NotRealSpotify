@@ -12,12 +12,12 @@
 
       <div class="text-center max-w-md">
         <h1 class="text-4xl font-bold mb-6">Welcome to "Not Real" Spotify</h1>
-        <p class="text-gray-400 mb-8">Connect with Spotify to access your  music library, playlists, and more.</p>
+        <p class="text-gray-400 mb-8">Connect with your <b>REAL</b> Spotify account to access your <b>REAL</b> music library, playlists, and more.</p>
         <button
           @click="login"
           class="bg-green-500 text-white px-8 py-4 rounded-full hover:bg-green-600 transition-colors text-lg font-semibold flex items-center justify-center space-x-2 mx-auto"
         >
-          <span>Connect with Spotify</span>
+          <span>Connect with your <b>REAL</b> Spotify</span>
         </button>
       </div>
     </div>
