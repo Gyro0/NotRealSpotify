@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen bg-black text-white p-8">
+  <div class="min-h-screen bg-black text-white p-8 rounded-lg">
     <!-- Login Section for unauthenticated users -->
-    <div v-if="!isAuthenticated()" class="flex flex-col items-center justify-center min-h-screen">
+    <div v-if="!isAuthenticated()" class="flex flex-col items-center justify-center min-h-screen ">
       <!-- Spotify Logo -->
       <div class="mb-12">
         <svg class="w-64" viewBox="0 0 1134 340" xmlns="http://www.w3.org/2000/svg">
@@ -25,7 +25,7 @@
     </div>
 
     <!-- Recently Played Section for authenticated users -->
-    <div v-else class="rounded-lg">
+    <div v-else >
       <h1 class="text-3xl font-bold mb-8">Recently Played</h1>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div v-for="item in recentlyPlayed" :key="item.track.id" 
