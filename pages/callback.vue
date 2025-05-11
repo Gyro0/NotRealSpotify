@@ -7,13 +7,13 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 const route = useRoute()
 const router = useRouter()
 const { handleCallback } = useAuth()
 
 onMounted(async () => {
-  const code = route.query.code as string
+  const code = route.query.code?.toString()
   if (code) {
     await handleCallback(code)
     router.push('/')
