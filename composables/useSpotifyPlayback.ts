@@ -59,6 +59,11 @@ export const useSpotifyPlayback = () => {
         throw new Error(data.error_description || data.error || 'Failed to fetch from Spotify')
       }
 
+      // Handle 204 No Content responses
+      if (response.status === 204) {
+        return true
+      }
+
       return response.json()
     } catch (err) {
       console.error('Error in fetchWithAuth:', err)
@@ -146,8 +151,10 @@ export const useSpotifyPlayback = () => {
 
   const setVolume = async (newVolume: number) => {
     try {
-      await fetchWithAuth(`/me/player/volume?volume_percent=${newVolume}`, { method: 'PUT' })
-      volume.value = newVolume
+      const response = await fetchWithAuth(`/me/player/volume?volume_percent=${newVolume}`, { method: 'PUT' })
+      if (response !== null) {
+        volume.value = newVolume
+      }
     } catch (err: unknown) {
       console.error('Error setting volume:', err)
       error.value = err instanceof Error ? err.message : 'Unknown error occurred'
