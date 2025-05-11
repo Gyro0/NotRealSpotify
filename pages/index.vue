@@ -115,21 +115,6 @@ const { playTrack } = useSpotifyPlayback()
 const recentlyPlayed = ref<RecentlyPlayedItem[]>([])
 const recommendations = ref<SpotifyTrack[]>([])
 
-// Fetch recently played tracks
-const fetchRecentlyPlayed = async () => {
-  try {
-    const response = await fetch('https://api.spotify.com/v1/me/player/recently-played?limit=10', {
-      headers: {
-        'Authorization': `Bearer ${accessToken.value}`
-      }
-    })
-    const data = await response.json()
-    recentlyPlayed.value = data.items
-  } catch (error) {
-    console.error('Error fetching recently played:', error)
-  }
-}
-
 // Fetch recommendations
 const fetchRecommendations = async () => {
   try {
@@ -139,21 +124,74 @@ const fetchRecommendations = async () => {
         'Authorization': `Bearer ${accessToken.value}`
       }
     })
+    
+    if (!topTracksResponse.ok) {
+      console.error('Error fetching top tracks:', await topTracksResponse.json())
+      // If we can't get top tracks, use some default seed tracks
+      const defaultSeedTracks = '4cOdK2wGLETKBW3PvgPWqT,6rqhFgbbKwnb9MLmUQDhG6,1z6WtY7c4iy0wFp8ZQ9MKP'
+      await fetchRecommendationsWithSeeds(defaultSeedTracks)
+      return
+    }
+
     const topTracksData = await topTracksResponse.json()
+    
+    if (!topTracksData.items || topTracksData.items.length === 0) {
+      // If no top tracks available, use default seed tracks
+      const defaultSeedTracks = '4cOdK2wGLETKBW3PvgPWqT,6rqhFgbbKwnb9MLmUQDhG6,1z6WtY7c4iy0wFp8ZQ9MKP'
+      await fetchRecommendationsWithSeeds(defaultSeedTracks)
+      return
+    }
     
     // Get seed tracks for recommendations
     const seedTracks = topTracksData.items.map((track: SpotifyTrack) => track.id).join(',')
-    
-    // Fetch recommendations based on seed tracks
+    await fetchRecommendationsWithSeeds(seedTracks)
+  } catch (error) {
+    console.error('Error fetching recommendations:', error)
+    // Try to fetch recommendations with default seed tracks
+    const defaultSeedTracks = '4cOdK2wGLETKBW3PvgPWqT,6rqhFgbbKwnb9MLmUQDhG6,1z6WtY7c4iy0wFp8ZQ9MKP'
+    await fetchRecommendationsWithSeeds(defaultSeedTracks)
+  }
+}
+
+// Helper function to fetch recommendations with seed tracks
+const fetchRecommendationsWithSeeds = async (seedTracks: string) => {
+  try {
     const response = await fetch(`https://api.spotify.com/v1/recommendations?limit=10&seed_tracks=${seedTracks}`, {
       headers: {
         'Authorization': `Bearer ${accessToken.value}`
       }
     })
+    
+    if (!response.ok) {
+      console.error('Error fetching recommendations:', await response.json())
+      return
+    }
+    
     const data = await response.json()
     recommendations.value = data.tracks
   } catch (error) {
-    console.error('Error fetching recommendations:', error)
+    console.error('Error fetching recommendations with seeds:', error)
+  }
+}
+
+// Fetch recently played tracks
+const fetchRecentlyPlayed = async () => {
+  try {
+    const response = await fetch('https://api.spotify.com/v1/me/player/recently-played?limit=10', {
+      headers: {
+        'Authorization': `Bearer ${accessToken.value}`
+      }
+    })
+    
+    if (!response.ok) {
+      console.error('Error fetching recently played:', await response.json())
+      return
+    }
+    
+    const data = await response.json()
+    recentlyPlayed.value = data.items
+  } catch (error) {
+    console.error('Error fetching recently played:', error)
   }
 }
 
