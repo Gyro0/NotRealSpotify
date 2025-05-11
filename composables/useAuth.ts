@@ -1,10 +1,16 @@
 import { ref } from 'vue'
 
-const config = useRuntimeConfig()
-const accessToken = ref('')
-const refreshToken = ref('')
-
 export const useAuth = () => {
+  const config = useRuntimeConfig()
+  const accessToken = ref('')
+  const refreshToken = ref('')
+
+  // Initialize tokens from localStorage if available
+  if (process.client) {
+    accessToken.value = localStorage.getItem('spotify_access_token') || ''
+    refreshToken.value = localStorage.getItem('spotify_refresh_token') || ''
+  }
+
   const login = () => {
     const clientId = config.public.spotifyClientId
     const redirectUri = config.public.spotifyRedirectUri
@@ -12,7 +18,9 @@ export const useAuth = () => {
     
     const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${encodeURIComponent(scope)}`
     
-    window.location.href = authUrl
+    if (process.client) {
+      window.location.href = authUrl
+    }
   }
 
   const handleCallback = async (code: string) => {
@@ -29,9 +37,10 @@ export const useAuth = () => {
       accessToken.value = data.access_token
       refreshToken.value = data.refresh_token
 
-      // Store tokens in localStorage
-      localStorage.setItem('spotify_access_token', data.access_token)
-      localStorage.setItem('spotify_refresh_token', data.refresh_token)
+      if (process.client) {
+        localStorage.setItem('spotify_access_token', data.access_token)
+        localStorage.setItem('spotify_refresh_token', data.refresh_token)
+      }
     } catch (error) {
       console.error('Error during authentication:', error)
     }
@@ -40,8 +49,10 @@ export const useAuth = () => {
   const logout = () => {
     accessToken.value = ''
     refreshToken.value = ''
-    localStorage.removeItem('spotify_access_token')
-    localStorage.removeItem('spotify_refresh_token')
+    if (process.client) {
+      localStorage.removeItem('spotify_access_token')
+      localStorage.removeItem('spotify_refresh_token')
+    }
   }
 
   const isAuthenticated = () => {

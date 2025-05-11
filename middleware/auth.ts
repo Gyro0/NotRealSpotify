@@ -1,10 +1,13 @@
 export default defineNuxtRouteMiddleware((to, from) => {
   const { isAuthenticated } = useAuth()
   
-  // List of routes that require authentication
-  const protectedRoutes = ['/playlists', '/profile', '/search']
-  
-  if (protectedRoutes.includes(to.path) && !isAuthenticated()) {
+  // If user is not authenticated and trying to access a protected route
+  if (!isAuthenticated() && to.path !== '/') {
     return navigateTo('/')
+  }
+  
+  // If user is authenticated and trying to access the login page
+  if (isAuthenticated() && to.path === '/') {
+    return navigateTo('/playlists')
   }
 }) 
