@@ -1,17 +1,25 @@
 <template>
   <div>
-    <NuxtLayout v-if="isAuthenticated">
+    <NuxtLayout v-if="isAuthenticated()">
       <NuxtPage />
     </NuxtLayout>
     <NuxtPage v-else />
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { onMounted } from 'vue'
+
 const { isAuthenticated } = useAuth()
 const route = useRoute()
 
-// Redirect to login if not authenticated and not on login/callback page
+// Check authentication state on mount and when route changes
+onMounted(() => {
+  if (!isAuthenticated() && route.path !== '/' && route.path !== '/callback') {
+    navigateTo('/')
+  }
+})
+
 watch(() => route.path, (path) => {
   if (!isAuthenticated() && path !== '/' && path !== '/callback') {
     navigateTo('/')
