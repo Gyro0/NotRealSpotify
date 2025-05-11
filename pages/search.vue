@@ -1,470 +1,165 @@
 <template>
-  <div class="min-h-screen">
+  <div class="bg-[#121212] min-h-screen">
     <!-- Search Input -->
-    <div class="sticky top-0 z-10 bg-black/80 backdrop-blur-md p-4">
-      <div class="relative max-w-2xl mx-auto">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search for tracks, artists, albums, playlists, or user profiles..."
-          class="w-full bg-gray-800/50 text-white px-4 py-3 rounded-full pl-12 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-300"
-          @input="handleSearch"
-        />
-        <svg class="w-6 h-6 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
+    <div class="sticky top-0 z-10 bg-[#121212] p-4">
+      <div class="max-w-3xl mx-auto">
+        <div class="relative">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="What do you want to listen to?"
+            class="w-full bg-[#242424] text-white px-4 py-3 rounded-md pl-12 focus:outline-none focus:ring-2 focus:ring-white"
+            @input="handleSearch"
+          />
+          <svg class="w-6 h-6 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+          </svg>
+        </div>
       </div>
     </div>
 
     <!-- Loading State -->
-    <div v-if="isLoading" class="flex justify-center items-center p-8">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+    <div v-if="loading" class="flex justify-center items-center h-64">
+      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
     </div>
 
     <!-- Search Results -->
-    <div v-else-if="searchQuery" class="p-8 max-w-7xl mx-auto">
+    <div v-else-if="searchQuery" class="max-w-7xl mx-auto p-4">
       <!-- User Profiles -->
-      <div v-if="displayedUsers.length > 0" class="mb-12">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-2xl font-bold">User Profiles</h2>
-          <button 
-            v-if="users.length > displayedUsers.length"
-            @click="loadMoreUsers"
-            class="text-green-500 hover:text-green-400 transition-colors"
-          >
-            Show More
-          </button>
-        </div>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
-          <div v-for="user in displayedUsers" :key="user.id" 
-            class="bg-gray-800/50 p-4 rounded-lg hover:bg-gray-700/50 transition-all duration-300 cursor-pointer group"
-            @click="navigateToUser(user.id)"
-          >
-            <div class="relative aspect-square mb-4 overflow-hidden rounded-lg">
-              <img 
-                v-if="user.images?.[0]?.url" 
-                :src="user.images[0].url" 
-                :alt="user.display_name"
-                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-              />
-              <div v-else class="w-full h-full bg-gray-700 flex items-center justify-center">
-                <span class="text-2xl text-gray-400">{{ user.display_name?.charAt(0)?.toUpperCase() }}</span>
+      <div v-if="userProfiles.length > 0" class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Profiles</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div v-for="profile in userProfiles" :key="profile.id" class="bg-[#181818] p-4 rounded-md hover:bg-[#282828]">
+            <div class="flex items-center space-x-4">
+              <img :src="profile.images?.[0]?.url || '/default-avatar.png'" :alt="profile.display_name" class="w-16 h-16 rounded-full">
+              <div>
+                <h3 class="font-medium">{{ profile.display_name }}</h3>
+                <p class="text-sm text-gray-400">Profile</p>
               </div>
             </div>
-            <h3 class="font-medium truncate">{{ user.display_name }}</h3>
-            <p class="text-sm text-gray-400">{{ user.followers?.total }} followers</p>
           </div>
         </div>
       </div>
 
       <!-- Tracks -->
-      <div v-if="displayedTracks.length > 0" class="mb-12">
-        <h2 class="text-2xl font-bold mb-6">Tracks</h2>
+      <div v-if="tracks.length > 0" class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Songs</h2>
         <div class="space-y-2">
-          <div v-for="track in displayedTracks" :key="track?.id" 
-            class="flex items-center space-x-4 p-4 rounded-lg hover:bg-gray-800/50 transition-all duration-300 cursor-pointer group"
-            @click="playTrack(track?.uri)"
-          >
-            <div class="relative w-12 h-12 flex-shrink-0">
-              <img 
-                v-if="track?.album?.images?.[0]?.url" 
-                :src="track.album.images[0].url" 
-                :alt="track?.name"
-                class="w-full h-full object-cover rounded transition-transform duration-300 group-hover:scale-110"
-              />
-              <div v-else class="w-full h-full bg-gray-700 rounded flex items-center justify-center">
-                <span class="text-lg text-gray-400">{{ track?.name?.charAt(0)?.toUpperCase() }}</span>
+          <div v-for="track in tracks" :key="track.id" class="flex items-center justify-between p-2 rounded-md hover:bg-[#282828]">
+            <div class="flex items-center space-x-4">
+              <img :src="track.album?.images?.[0]?.url" :alt="track.name" class="w-12 h-12">
+              <div>
+                <h3 class="font-medium">{{ track.name }}</h3>
+                <p class="text-sm text-gray-400">{{ track.artists?.map((a: SpotifyArtist) => a.name).join(', ') }}</p>
               </div>
             </div>
-            <div class="flex-1 min-w-0">
-              <p class="font-medium truncate">{{ track?.name }}</p>
-              <p class="text-sm text-gray-400 truncate">{{ track?.artists?.map(artist => artist?.name).filter(Boolean).join(', ') }}</p>
-            </div>
-            <span class="text-gray-400 text-sm">{{ formatDuration(track?.duration_ms || 0) }}</span>
+            <div class="text-sm text-gray-400">{{ formatDuration(track.duration_ms) }}</div>
           </div>
         </div>
-        <button 
-          v-if="tracks.length > displayedTracks.length"
-          @click="loadMoreTracks"
-          class="mt-4 text-green-500 hover:text-green-400 transition-colors"
-        >
-          See More Tracks
-        </button>
       </div>
 
       <!-- Artists -->
-      <div v-if="displayedArtists.length > 0" class="mb-12">
-        <h2 class="text-2xl font-bold mb-6">Artists</h2>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          <div v-for="artist in displayedArtists" :key="artist?.id" 
-            class="bg-gray-800/50 p-4 rounded-lg hover:bg-gray-700/50 transition-all duration-300 cursor-pointer group"
-            @click="navigateToArtist(artist?.id)"
-          >
-            <div class="relative aspect-square mb-4 overflow-hidden rounded-full">
-              <img 
-                v-if="artist?.images?.[0]?.url" 
-                :src="artist.images[0].url" 
-                :alt="artist?.name"
-                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-              />
-              <div v-else class="w-full h-full bg-gray-700 flex items-center justify-center">
-                <span class="text-2xl text-gray-400">{{ artist?.name?.charAt(0)?.toUpperCase() }}</span>
-              </div>
-            </div>
-            <h3 class="font-medium truncate text-center">{{ artist?.name }}</h3>
-            <p class="text-sm text-gray-400 text-center">Artist</p>
+      <div v-if="artists.length > 0" class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Artists</h2>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div v-for="artist in artists" :key="artist.id" class="bg-[#181818] p-4 rounded-md hover:bg-[#282828]">
+            <img :src="artist.images?.[0]?.url" :alt="artist.name" class="w-full aspect-square rounded-full mb-4">
+            <h3 class="font-medium truncate">{{ artist.name }}</h3>
+            <p class="text-sm text-gray-400">Artist</p>
           </div>
         </div>
-        <button 
-          v-if="artists.length > displayedArtists.length"
-          @click="loadMoreArtists"
-          class="mt-4 text-green-500 hover:text-green-400 transition-colors"
-        >
-          See More Artists
-        </button>
       </div>
 
       <!-- Albums -->
-      <div v-if="displayedAlbums.length > 0" class="mb-12">
-        <h2 class="text-2xl font-bold mb-6">Albums</h2>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          <div v-for="album in displayedAlbums" :key="album?.id" 
-            class="bg-gray-800/50 p-4 rounded-lg hover:bg-gray-700/50 transition-all duration-300 cursor-pointer group"
-            @click="navigateToAlbum(album?.id)"
-          >
-            <div class="relative aspect-square mb-4 overflow-hidden rounded-lg">
-              <img 
-                v-if="album?.images?.[0]?.url" 
-                :src="album.images[0].url" 
-                :alt="album?.name"
-                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-              />
-              <div v-else class="w-full h-full bg-gray-700 flex items-center justify-center">
-                <span class="text-2xl text-gray-400">{{ album?.name?.charAt(0)?.toUpperCase() }}</span>
-              </div>
-            </div>
-            <h3 class="font-medium truncate">{{ album?.name }}</h3>
-            <p class="text-sm text-gray-400 truncate">{{ album?.artists?.map(artist => artist?.name).filter(Boolean).join(', ') }}</p>
+      <div v-if="albums.length > 0" class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Albums</h2>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div v-for="album in albums" :key="album.id" class="bg-[#181818] p-4 rounded-md hover:bg-[#282828]">
+            <img :src="album.images?.[0]?.url" :alt="album.name" class="w-full aspect-square rounded-md mb-4">
+            <h3 class="font-medium truncate">{{ album.name }}</h3>
+            <p class="text-sm text-gray-400">{{ album.artists?.map((a: SpotifyArtist) => a.name).join(', ') }}</p>
           </div>
         </div>
-        <button 
-          v-if="albums.length > displayedAlbums.length"
-          @click="loadMoreAlbums"
-          class="mt-4 text-green-500 hover:text-green-400 transition-colors"
-        >
-          See More Albums
-        </button>
       </div>
 
       <!-- Playlists -->
-      <div v-if="displayedPlaylists.length > 0" class="mb-12">
-        <h2 class="text-2xl font-bold mb-6">Playlists</h2>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          <div v-for="playlist in displayedPlaylists" :key="playlist?.id" 
-            class="bg-gray-800/50 p-4 rounded-lg hover:bg-gray-700/50 transition-all duration-300 cursor-pointer group"
-            @click="navigateToPlaylist(playlist?.id)"
-          >
-            <div class="relative aspect-square mb-4 overflow-hidden rounded-lg">
-              <img 
-                v-if="playlist?.images?.[0]?.url" 
-                :src="playlist.images[0].url" 
-                :alt="playlist?.name"
-                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-              />
-              <div v-else class="w-full h-full bg-gray-700 flex items-center justify-center">
-                <span class="text-2xl text-gray-400">{{ playlist?.name?.charAt(0)?.toUpperCase() }}</span>
-              </div>
-            </div>
-            <h3 class="font-medium truncate">{{ playlist?.name }}</h3>
-            <p class="text-sm text-gray-400">By {{ playlist?.owner?.display_name }}</p>
+      <div v-if="playlists.length > 0" class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Playlists</h2>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div v-for="playlist in playlists" :key="playlist.id" class="bg-[#181818] p-4 rounded-md hover:bg-[#282828]">
+            <img :src="playlist.images?.[0]?.url" :alt="playlist.name" class="w-full aspect-square rounded-md mb-4">
+            <h3 class="font-medium truncate">{{ playlist.name }}</h3>
+            <p class="text-sm text-gray-400">By {{ playlist.owner?.display_name }}</p>
           </div>
         </div>
-        <button 
-          v-if="playlists.length > displayedPlaylists.length"
-          @click="loadMorePlaylists"
-          class="mt-4 text-green-500 hover:text-green-400 transition-colors"
-        >
-          See More Playlists
-        </button>
       </div>
 
       <!-- No Results -->
-      <div v-if="!isLoading && !displayedTracks.length && !displayedArtists.length && !displayedAlbums.length && !displayedPlaylists.length && !displayedUsers.length" 
-        class="text-center text-gray-400 py-12"
-      >
-        <svg class="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <div v-if="!loading && !hasResults" class="text-center py-12">
+        <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
         </svg>
-        <p class="text-xl">No results found for "{{ searchQuery }}"</p>
-        <p class="text-sm mt-2">Try different keywords or check your spelling</p>
+        <h3 class="text-xl font-bold mb-2">No results found</h3>
+        <p class="text-gray-400">Try different keywords or check your spelling</p>
       </div>
+    </div>
+
+    <!-- Empty State -->
+    <div v-else class="max-w-3xl mx-auto p-8 text-center">
+      <h2 class="text-2xl font-bold mb-4">Search for your favorite music</h2>
+      <p class="text-gray-400">Find songs, artists, albums, and playlists</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuth } from '~/composables/useAuth'
-import { useSpotifyPlayback } from '~/composables/useSpotifyPlayback'
-
-interface SpotifyImage {
-  url: string
-}
+import { ref, computed } from 'vue'
+import { useSpotifySearch } from '~/composables/useSpotifySearch'
 
 interface SpotifyArtist {
-  id: string
   name: string
-  images: SpotifyImage[]
-}
-
-interface SpotifyAlbum {
   id: string
-  name: string
-  images: SpotifyImage[]
-  artists: SpotifyArtist[]
 }
-
-interface SpotifyTrack {
-  id: string
-  name: string
-  uri: string
-  duration_ms: number
-  album: SpotifyAlbum
-  artists: SpotifyArtist[]
-}
-
-interface SpotifyPlaylist {
-  id: string
-  name: string
-  images: SpotifyImage[]
-  owner: {
-    display_name: string
-  }
-}
-
-interface SpotifyUser {
-  id: string
-  display_name: string
-  images: SpotifyImage[]
-  followers?: {
-    total: number
-  }
-}
-
-const router = useRouter()
-const { accessToken, refreshAccessToken } = useAuth()
-const { playTrack: playSpotifyTrack } = useSpotifyPlayback()
 
 const searchQuery = ref('')
-const isLoading = ref(false)
-const tracks = ref<SpotifyTrack[]>([])
-const artists = ref<SpotifyArtist[]>([])
-const albums = ref<SpotifyAlbum[]>([])
-const playlists = ref<SpotifyPlaylist[]>([])
-const users = ref<SpotifyUser[]>([])
+const loading = ref(false)
+const searchResults = ref<any>(null)
 
-// Display limits
-const ITEMS_PER_PAGE = 6
-const displayedTracks = ref<SpotifyTrack[]>([])
-const displayedArtists = ref<SpotifyArtist[]>([])
-const displayedAlbums = ref<SpotifyAlbum[]>([])
-const displayedPlaylists = ref<SpotifyPlaylist[]>([])
-const displayedUsers = ref<SpotifyUser[]>([])
-const usersPerPage = 6
-const error = ref('')
+const { search } = useSpotifySearch()
 
-// Custom debounce function
-let searchTimeout: NodeJS.Timeout | null = null
-const handleSearch = () => {
-  if (searchTimeout) {
-    clearTimeout(searchTimeout)
+const userProfiles = computed(() => searchResults.value?.users?.items || [])
+const tracks = computed(() => searchResults.value?.tracks?.items || [])
+const artists = computed(() => searchResults.value?.artists?.items || [])
+const albums = computed(() => searchResults.value?.albums?.items || [])
+const playlists = computed(() => searchResults.value?.playlists?.items || [])
+
+const hasResults = computed(() => {
+  return userProfiles.value.length > 0 ||
+    tracks.value.length > 0 ||
+    artists.value.length > 0 ||
+    albums.value.length > 0 ||
+    playlists.value.length > 0
+})
+
+const handleSearch = async () => {
+  if (!searchQuery.value.trim()) {
+    searchResults.value = null
+    return
   }
-  searchTimeout = setTimeout(() => {
-    search()
-  }, 300)
+
+  loading.value = true
+  try {
+    searchResults.value = await search(searchQuery.value)
+  } catch (error) {
+    console.error('Search error:', error)
+  } finally {
+    loading.value = false
+  }
 }
 
-// Load more functions
-const loadMoreTracks = () => {
-  const currentLength = displayedTracks.value.length
-  displayedTracks.value = tracks.value.slice(0, currentLength + ITEMS_PER_PAGE)
-}
-
-const loadMoreArtists = () => {
-  const currentLength = displayedArtists.value.length
-  displayedArtists.value = artists.value.slice(0, currentLength + ITEMS_PER_PAGE)
-}
-
-const loadMoreAlbums = () => {
-  const currentLength = displayedAlbums.value.length
-  displayedAlbums.value = albums.value.slice(0, currentLength + ITEMS_PER_PAGE)
-}
-
-const loadMorePlaylists = () => {
-  const currentLength = displayedPlaylists.value.length
-  displayedPlaylists.value = playlists.value.slice(0, currentLength + ITEMS_PER_PAGE)
-}
-
-const loadMoreUsers = () => {
-  const currentLength = displayedUsers.value.length
-  const nextUsers = users.value.slice(currentLength, currentLength + usersPerPage)
-  displayedUsers.value = [...displayedUsers.value, ...nextUsers]
-}
-
-// Format duration from milliseconds to MM:SS
 const formatDuration = (ms: number) => {
   const minutes = Math.floor(ms / 60000)
   const seconds = Math.floor((ms % 60000) / 1000)
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
-
-// Search function
-const search = async () => {
-  if (!searchQuery.value) {
-    resetResults()
-    return
-  }
-
-  if (!accessToken.value) {
-    console.error('No access token available')
-    return
-  }
-
-  isLoading.value = true
-  try {
-    // Search for tracks, artists, albums, and playlists
-    const response = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(searchQuery.value)}&type=track,artist,album,playlist&limit=50`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken.value}`
-      }
-    })
-    
-    if (!response.ok) {
-      if (response.status === 401) {
-        await refreshAccessToken()
-        return search()
-      }
-      throw new Error('Failed to search')
-    }
-    
-    const data = await response.json()
-    tracks.value = data.tracks?.items || []
-    artists.value = data.artists?.items || []
-    albums.value = data.albums?.items || []
-    playlists.value = data.playlists?.items || []
-
-    // Search for users by trying to fetch their profile
-    try {
-      const userResponse = await fetch(`https://api.spotify.com/v1/users/${encodeURIComponent(searchQuery.value)}`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken.value}`
-        }
-      })
-      
-      if (userResponse.ok) {
-        const userData = await userResponse.json()
-        users.value = [userData]
-      } else {
-        users.value = []
-      }
-    } catch (error) {
-      console.error('Error searching for users:', error)
-      users.value = []
-    }
-    
-    // Initialize displayed items
-    resetDisplayedItems()
-  } catch (error) {
-    console.error('Error searching:', error)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Reset displayed items to initial state
-const resetDisplayedItems = () => {
-  displayedTracks.value = tracks.value.slice(0, ITEMS_PER_PAGE)
-  displayedArtists.value = artists.value.slice(0, ITEMS_PER_PAGE)
-  displayedAlbums.value = albums.value.slice(0, ITEMS_PER_PAGE)
-  displayedPlaylists.value = playlists.value.slice(0, ITEMS_PER_PAGE)
-  displayedUsers.value = users.value.slice(0, usersPerPage)
-}
-
-// Reset all results
-const resetResults = () => {
-  tracks.value = []
-  artists.value = []
-  albums.value = []
-  playlists.value = []
-  users.value = []
-  displayedUsers.value = []
-  displayedTracks.value = []
-  displayedArtists.value = []
-  displayedAlbums.value = []
-  displayedPlaylists.value = []
-  isLoading.value = false
-  error.value = ''
-}
-
-// Navigation functions
-const navigateToUser = (id: string) => {
-  if (id) {
-    router.push(`/user/${id}`)
-  }
-}
-
-const navigateToArtist = (id: string) => {
-  if (id) {
-    router.push(`/artist/${id}`)
-  }
-}
-
-const navigateToAlbum = (id: string) => {
-  if (id) {
-    router.push(`/album/${id}`)
-  }
-}
-
-const navigateToPlaylist = (id: string) => {
-  if (id) {
-    router.push(`/playlist/${id}`)
-  }
-}
-
-// Play track
-const playTrack = (uri: string) => {
-  if (uri) {
-    playSpotifyTrack(uri)
-  }
-}
-
-onMounted(() => {
-  // Clear any existing search results
-  resetResults()
-})
-</script>
-
-<style scoped>
-input[type="range"] {
-  -webkit-appearance: none;
-  height: 4px;
-  background: #4B5563;
-  border-radius: 2px;
-  outline: none;
-}
-
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
-  background: white;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-}
-</style> 
+</script> 
