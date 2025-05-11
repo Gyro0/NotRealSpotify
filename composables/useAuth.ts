@@ -15,7 +15,7 @@ export const useAuth = () => {
     try {
       const clientId = config.public.spotifyClientId
       const redirectUri = config.public.spotifyRedirectUri.replace(/\/$/, '') // Remove trailing slash
-      const scope = 'user-read-private user-read-email user-read-playback-state user-modify-playback-state user-read-currently-playing playlist-read-private playlist-modify-private playlist-modify-public'
+      const scope = 'user-read-private user-read-email user-read-playback-state user-modify-playback-state user-read-currently-playing playlist-read-private playlist-modify-private playlist-modify-public user-top-read user-read-recently-played'
       
       // Debug logging
       console.log('Auth Configuration:', {
