@@ -1,138 +1,108 @@
 <template>
-  <div>
-    <div class="flex justify-between items-center mb-8">
-      <h1 class="text-3xl font-bold">Your Playlists</h1>
-      <button
-        @click="createNewPlaylist"
-        class="bg-green-500 text-white px-6 py-2 rounded-full hover:bg-green-600 transition-colors"
-      >
-        Create Playlist
-      </button>
+  <div class="min-h-screen">
+    <h1 class="text-3xl font-bold mb-8">Your Library</h1>
+
+    <!-- Loading State -->
+    <div v-if="isLoading" class="flex justify-center items-center p-8">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="text-center text-red-500 p-8">
+      {{ error }}
     </div>
 
     <!-- Playlists Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      <div v-for="playlist in playlists" :key="playlist.id"
-           class="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
-           @click="openPlaylist(playlist)">
-        <div class="aspect-square relative mb-4">
-          <img 
-            v-if="playlist.images?.[0]?.url" 
-            :src="playlist.images[0].url" 
-            :alt="playlist.name"
-            class="w-full h-full object-cover rounded-lg"
-          />
-          <div v-else class="w-full h-full bg-gray-600 rounded-lg flex items-center justify-center">
-            <svg class="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-            </svg>
-          </div>
+    <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+      <div v-for="playlist in playlists" :key="playlist.id" 
+        class="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
+        @click="navigateToPlaylist(playlist.id)"
+      >
+        <img 
+          v-if="playlist.images?.[0]?.url" 
+          :src="playlist.images[0].url" 
+          :alt="playlist.name"
+          class="w-full aspect-square object-cover rounded mb-4"
+        />
+        <div v-else class="w-full aspect-square bg-gray-700 rounded mb-4 flex items-center justify-center">
+          <span class="text-2xl text-gray-400">{{ playlist.name?.charAt(0)?.toUpperCase() }}</span>
         </div>
         <h3 class="font-medium truncate">{{ playlist.name }}</h3>
-        <p class="text-sm text-gray-400">{{ playlist.tracks.total }} tracks</p>
+        <p class="text-sm text-gray-400">{{ playlist.tracks?.total }} tracks</p>
       </div>
     </div>
 
-    <!-- Create Playlist Modal -->
-    <div v-if="showCreateModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md">
-        <h2 class="text-2xl font-bold mb-4">Create New Playlist</h2>
-        <input
-          v-model="newPlaylistName"
-          type="text"
-          placeholder="Playlist name"
-          class="w-full p-3 bg-gray-700 rounded mb-4 text-white"
-        />
-        <div class="flex justify-end space-x-4">
-          <button
-            @click="showCreateModal = false"
-            class="px-4 py-2 text-gray-400 hover:text-white"
-          >
-            Cancel
-          </button>
-          <button
-            @click="submitNewPlaylist"
-            class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-          >
-            Create
-          </button>
-        </div>
-      </div>
+    <!-- No Playlists -->
+    <div v-if="!isLoading && !error && playlists.length === 0" class="text-center text-gray-400 py-12">
+      No playlists found. Create your first playlist!
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuth } from '~/composables/useAuth'
 
-const { accessToken } = useAuth()
-const playlists = ref([])
-const showCreateModal = ref(false)
-const newPlaylistName = ref('')
+interface SpotifyImage {
+  url: string
+}
+
+interface SpotifyPlaylist {
+  id: string
+  name: string
+  images: SpotifyImage[]
+  tracks: {
+    total: number
+  }
+}
+
+const router = useRouter()
+const { accessToken, refreshAccessToken } = useAuth()
+
+const playlists = ref<SpotifyPlaylist[]>([])
+const isLoading = ref(true)
+const error = ref('')
 
 // Fetch user's playlists
 const fetchPlaylists = async () => {
   try {
-    const response = await fetch('https://api.spotify.com/v1/me/playlists', {
+    const response = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
       headers: {
         'Authorization': `Bearer ${accessToken.value}`
       }
     })
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        await refreshAccessToken()
+        return fetchPlaylists()
+      }
+      throw new Error('Failed to fetch playlists')
+    }
+    
     const data = await response.json()
     playlists.value = data.items
-  } catch (error) {
-    console.error('Error fetching playlists:', error)
+  } catch (err: unknown) {
+    console.error('Error fetching playlists:', err)
+    error.value = 'Failed to load playlists'
+  } finally {
+    isLoading.value = false
   }
 }
 
-// Create new playlist
-const createNewPlaylist = () => {
-  showCreateModal.value = true
+// Navigation function
+const navigateToPlaylist = (id: string) => {
+  router.push(`/playlist/${id}`)
 }
 
-const submitNewPlaylist = async () => {
-  if (!newPlaylistName.value) return
-
-  try {
-    // First, get user ID
-    const userResponse = await fetch('https://api.spotify.com/v1/me', {
-      headers: {
-        'Authorization': `Bearer ${accessToken.value}`
-      }
-    })
-    const userData = await userResponse.json()
-
-    // Create playlist
-    const response = await fetch(`https://api.spotify.com/v1/users/${userData.id}/playlists`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken.value}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        name: newPlaylistName.value,
-        public: false
-      })
-    })
-
-    const data = await response.json()
-    playlists.value.unshift(data)
-    showCreateModal.value = false
-    newPlaylistName.value = ''
-  } catch (error) {
-    console.error('Error creating playlist:', error)
+onMounted(async () => {
+  if (!accessToken.value) {
+    error.value = 'Please log in to view your playlists'
+    isLoading.value = false
+    return
   }
-}
 
-// Open playlist
-const openPlaylist = (playlist) => {
-  navigateTo(`/playlist/${playlist.id}`)
-}
-
-// Fetch playlists when component is mounted
-onMounted(() => {
-  if (accessToken.value) {
-    fetchPlaylists()
-  }
+  await fetchPlaylists()
 })
 </script> 

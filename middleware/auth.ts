@@ -1,13 +1,14 @@
-export default defineNuxtRouteMiddleware((to, from) => {
+export default defineNuxtRouteMiddleware((to) => {
   const { isAuthenticated } = useAuth()
   
-  // If user is not authenticated and trying to access a protected route
-  if (!isAuthenticated() && to.path !== '/') {
-    return navigateTo('/')
-  }
+  // List of protected routes
+  const protectedRoutes = ['/search', '/playlist', '/profile']
   
-  // If user is authenticated and trying to access the login page
-  if (isAuthenticated() && to.path === '/') {
-    return navigateTo('/playlists')
+  // Check if the current route is protected
+  const isProtectedRoute = protectedRoutes.some(route => to.path.startsWith(route))
+  
+  if (isProtectedRoute && !isAuthenticated()) {
+    // Redirect to home page if trying to access protected route while not authenticated
+    return navigateTo('/')
   }
 }) 

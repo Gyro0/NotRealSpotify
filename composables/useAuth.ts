@@ -1,14 +1,86 @@
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+
+// Create singleton state
+const accessToken = ref('')
+const refreshToken = ref('')
 
 export const useAuth = () => {
   const config = useRuntimeConfig()
-  const accessToken = ref('')
-  const refreshToken = ref('')
+  const nuxtApp = useNuxtApp()
 
   // Initialize tokens from localStorage if available
-  if (process.client) {
-    accessToken.value = localStorage.getItem('spotify_access_token') || ''
-    refreshToken.value = localStorage.getItem('spotify_refresh_token') || ''
+  if (nuxtApp.$client && !accessToken.value) {
+    const storedAccessToken = localStorage.getItem('spotify_access_token')
+    const storedRefreshToken = localStorage.getItem('spotify_refresh_token')
+    console.log('Initializing tokens from localStorage:', {
+      hasAccessToken: !!storedAccessToken,
+      hasRefreshToken: !!storedRefreshToken
+    })
+    accessToken.value = storedAccessToken || ''
+    refreshToken.value = storedRefreshToken || ''
+  }
+
+  // Watch for token changes and update localStorage
+  watch(accessToken, (newToken) => {
+    if (nuxtApp.$client && newToken) {
+      console.log('Access token changed, updating localStorage')
+      localStorage.setItem('spotify_access_token', newToken)
+    }
+  })
+
+  watch(refreshToken, (newToken) => {
+    if (nuxtApp.$client && newToken) {
+      console.log('Refresh token changed, updating localStorage')
+      localStorage.setItem('spotify_refresh_token', newToken)
+    }
+  })
+
+  const refreshAccessToken = async () => {
+    try {
+      console.log('Attempting to refresh token...')
+      if (!refreshToken.value) {
+        throw new Error('No refresh token available')
+      }
+
+      const params = new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken.value,
+        client_id: config.public.spotifyClientId,
+        client_secret: config.public.spotifyClientSecret
+      })
+
+      const response = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: params
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Token refresh failed:', {
+          status: response.status,
+          error: errorData
+        })
+        throw new Error('Failed to refresh token')
+      }
+
+      const data = await response.json()
+      console.log('Token refresh successful')
+      
+      // Update tokens
+      accessToken.value = data.access_token
+      if (data.refresh_token) {
+        refreshToken.value = data.refresh_token
+      }
+
+      return data.access_token
+    } catch (error) {
+      console.error('Error refreshing token:', error)
+      logout()
+      throw error
+    }
   }
 
   const login = () => {
@@ -38,7 +110,7 @@ export const useAuth = () => {
       // Debug logging
       console.log('Generated Auth URL:', authUrl)
       
-      if (process.client) {
+      if (typeof window !== 'undefined') {
         window.location.href = authUrl
       }
     } catch (error) {
@@ -49,7 +121,6 @@ export const useAuth = () => {
 
   const handleCallback = async (code: string) => {
     try {
-      // Debug logging
       console.log('Starting callback handling')
       const redirectUri = config.public.spotifyRedirectUri.replace(/\/$/, '') // Remove trailing slash
       console.log('Using redirect URI:', redirectUri)
@@ -66,11 +137,9 @@ export const useAuth = () => {
         client_secret: config.public.spotifyClientSecret
       })
 
-      // Debug logging
       console.log('Token request params:', {
         redirect_uri: redirectUri,
         client_id: config.public.spotifyClientId,
-        // Don't log the client secret for security
       })
 
       const response = await fetch('https://accounts.spotify.com/api/token', {
@@ -83,7 +152,6 @@ export const useAuth = () => {
 
       const data = await response.json()
       
-      // Debug logging
       console.log('Token response status:', response.status)
       if (!response.ok) {
         console.error('Token request failed:', data)
@@ -94,15 +162,15 @@ export const useAuth = () => {
         throw new Error('No access token received')
       }
 
+      console.log('Setting tokens...')
+      // Update tokens
       accessToken.value = data.access_token
       refreshToken.value = data.refresh_token
 
-      if (process.client) {
-        localStorage.setItem('spotify_access_token', data.access_token)
-        localStorage.setItem('spotify_refresh_token', data.refresh_token)
-      }
-
-      console.log('Authentication successful')
+      console.log('Authentication successful, token set:', {
+        hasAccessToken: !!accessToken.value,
+        hasRefreshToken: !!refreshToken.value
+      })
     } catch (error) {
       console.error('Error during authentication:', error)
       throw error
@@ -110,16 +178,20 @@ export const useAuth = () => {
   }
 
   const logout = () => {
+    console.log('Logging out...')
     accessToken.value = ''
     refreshToken.value = ''
-    if (process.client) {
-      localStorage.removeItem('spotify_access_token')
-      localStorage.removeItem('spotify_refresh_token')
-    }
+    navigateTo('/')
   }
 
   const isAuthenticated = () => {
-    return !!accessToken.value
+    const authenticated = !!accessToken.value
+    console.log('Checking authentication:', { 
+      authenticated,
+      hasAccessToken: !!accessToken.value,
+      tokenLength: accessToken.value.length
+    })
+    return authenticated
   }
 
   return {
@@ -128,6 +200,7 @@ export const useAuth = () => {
     logout,
     isAuthenticated,
     accessToken,
-    refreshToken
+    refreshToken,
+    refreshAccessToken
   }
 } 

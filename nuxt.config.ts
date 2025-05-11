@@ -1,5 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  compatibilityDate: '2025-05-11',
   devtools: { enabled: true },
   modules: [
     '@nuxtjs/tailwindcss'
@@ -8,11 +9,14 @@ export default defineNuxtConfig({
     '~/assets/css/main.css'
   ],
   runtimeConfig: {
-    public: {
+    public: {      
       spotifyClientId: "05f7580aedcf4887a671145c70249399",
       spotifyRedirectUri: 'https://not-real-spotify.vercel.app/callback',
       spotifyClientSecret: "f748052696b24613a6b3a6cdea8cf61a"
     }
+  },
+  routeRules: {
+    '/.well-known/**': { static: true }
   },
   app: {
     head: {
@@ -25,8 +29,5 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
       ]
     }
-  },
-  nitro: {
-    preset: 'vercel'
   }
 })

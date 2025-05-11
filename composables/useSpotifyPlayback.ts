@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 interface SpotifyArtist {
   name: string
@@ -26,6 +26,8 @@ interface SpotifyError {
 
 export const useSpotifyPlayback = () => {
   const config = useRuntimeConfig()
+  const nuxtApp = useNuxtApp()
+  const { accessToken, refreshAccessToken } = useAuth()
   const isPlaying = ref(false)
   const currentTrack = ref<SpotifyTrack | null>(null)
   const currentTime = ref(0)
@@ -33,34 +35,35 @@ export const useSpotifyPlayback = () => {
   const volume = ref(50)
   const error = ref('')
 
-  const getAccessToken = () => {
-    if (process.client) {
-      return localStorage.getItem('spotify_access_token')
-    }
-    return ''
-  }
-
   const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
-    const token = getAccessToken()
-    if (!token) {
-      throw new Error('No access token available')
+    if (!accessToken.value) {
+      return null
     }
 
-    const response = await fetch(`https://api.spotify.com/v1${endpoint}`, {
-      ...options,
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    })
+    try {
+      const response = await fetch(`https://api.spotify.com/v1${endpoint}`, {
+        ...options,
+        headers: {
+          'Authorization': `Bearer ${accessToken.value}`,
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      })
 
-    if (!response.ok) {
-      const data = await response.json() as SpotifyError
-      throw new Error(data.error_description || data.error || 'Failed to fetch from Spotify')
+      if (!response.ok) {
+        if (response.status === 401) {
+          await refreshAccessToken()
+          return fetchWithAuth(endpoint, options)
+        }
+        const data = await response.json() as SpotifyError
+        throw new Error(data.error_description || data.error || 'Failed to fetch from Spotify')
+      }
+
+      return response.json()
+    } catch (err) {
+      console.error('Error in fetchWithAuth:', err)
+      return null
     }
-
-    return response.json()
   }
 
   const getCurrentPlayback = async () => {
@@ -165,7 +168,7 @@ export const useSpotifyPlayback = () => {
   let pollInterval: NodeJS.Timeout | null = null
 
   const startPolling = () => {
-    if (pollInterval) return
+    if (pollInterval || !accessToken.value) return
     pollInterval = setInterval(getCurrentPlayback, 1000)
   }
 
@@ -175,6 +178,15 @@ export const useSpotifyPlayback = () => {
       pollInterval = null
     }
   }
+
+  // Watch for access token changes
+  watch(accessToken, (newToken) => {
+    if (newToken) {
+      startPolling()
+    } else {
+      stopPolling()
+    }
+  })
 
   return {
     isPlaying,
