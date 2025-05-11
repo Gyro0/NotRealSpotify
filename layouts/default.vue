@@ -5,7 +5,7 @@
       <div class="mb-8">
         <NuxtLink to="/" class="flex items-center space-x-2">
           <img src="/spotify-logo.png" alt="Spotify" class="w-8 h-8" />
-          <span class="text-xl font-bold">Spotify</span>
+          <span class="text-xl font-bold">Not Real Spotify</span>
         </NuxtLink>
       </div>
 
