@@ -25,12 +25,20 @@ export const useAuth = () => {
 
   const handleCallback = async (code: string) => {
     try {
-      const response = await fetch('/api/auth/callback', {
+      const params = new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: config.public.spotifyRedirectUri,
+        client_id: config.public.spotifyClientId,
+        client_secret: config.public.spotifyClientSecret
+      })
+
+      const response = await fetch('https://accounts.spotify.com/api/token', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: JSON.stringify({ code }),
+        body: params
       })
 
       const data = await response.json()
