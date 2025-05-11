@@ -1,13 +1,7 @@
 <template>
   <div>
     <div class="flex items-center space-x-6 mb-8">
-      <img 
-        v-if="userProfile.images?.length > 0" 
-        :src="userProfile.images[0].url" 
-        :alt="userProfile.display_name"
-        class="w-32 h-32 rounded-full object-cover"
-      />
-      <div v-else class="w-32 h-32 bg-gray-600 rounded-full"></div>
+      <div class="w-32 h-32 bg-gray-600 rounded-full"></div>
       <div>
         <h1 class="text-3xl font-bold">{{ userProfile.display_name }}</h1>
         <p class="text-gray-400">{{ userProfile.followers?.total }} followers</p>
@@ -20,13 +14,7 @@
         <h3 class="text-xl font-semibold mb-2">Top Artists</h3>
         <div class="space-y-4">
           <div v-for="artist in topArtists" :key="artist.id" class="flex items-center space-x-4">
-            <img 
-              v-if="artist.images?.length > 0" 
-              :src="artist.images[0].url" 
-              :alt="artist.name"
-              class="w-12 h-12 rounded-full object-cover"
-            />
-            <div v-else class="w-12 h-12 bg-gray-600 rounded-full"></div>
+            <div class="w-12 h-12 bg-gray-600 rounded-full"></div>
             <div>
               <p class="font-medium">{{ artist.name }}</p>
               <p class="text-sm text-gray-400">Artist</p>
@@ -39,13 +27,7 @@
         <h3 class="text-xl font-semibold mb-2">Top Tracks</h3>
         <div class="space-y-4">
           <div v-for="track in topTracks" :key="track.id" class="flex items-center space-x-4">
-            <img 
-              v-if="track.album?.images?.length > 0" 
-              :src="track.album.images[0].url" 
-              :alt="track.name"
-              class="w-12 h-12 rounded object-cover"
-            />
-            <div v-else class="w-12 h-12 bg-gray-600 rounded"></div>
+            <div class="w-12 h-12 bg-gray-600 rounded"></div>
             <div>
               <p class="font-medium">{{ track.name }}</p>
               <p class="text-sm text-gray-400">{{ track.artists[0].name }}</p>
@@ -58,13 +40,7 @@
         <h3 class="text-xl font-semibold mb-2">Recently Played</h3>
         <div class="space-y-4">
           <div v-for="item in recentlyPlayed" :key="item.track.id" class="flex items-center space-x-4">
-            <img 
-              v-if="item.track.album?.images?.length > 0" 
-              :src="item.track.album.images[0].url" 
-              :alt="item.track.name"
-              class="w-12 h-12 rounded object-cover"
-            />
-            <div v-else class="w-12 h-12 bg-gray-600 rounded"></div>
+            <div class="w-12 h-12 bg-gray-600 rounded"></div>
             <div>
               <p class="font-medium">{{ item.track.name }}</p>
               <p class="text-sm text-gray-400">{{ item.track.artists[0].name }}</p>
@@ -88,7 +64,6 @@
 import { ref, onMounted } from 'vue'
 
 const { accessToken, logout } = useAuth()
-const { getCurrentUser, getTopArtists, getTopTracks, getRecentlyPlayed } = useSpotifyApi()
 const userProfile = ref({})
 const topArtists = ref([])
 const topTracks = ref([])
@@ -97,8 +72,12 @@ const recentlyPlayed = ref([])
 // Fetch user profile
 const fetchUserProfile = async () => {
   try {
-    const data = await getCurrentUser()
-    userProfile.value = data
+    const response = await fetch('https://api.spotify.com/v1/me', {
+      headers: {
+        'Authorization': `Bearer ${accessToken.value}`
+      }
+    })
+    userProfile.value = await response.json()
   } catch (error) {
     console.error('Error fetching user profile:', error)
   }
@@ -107,7 +86,12 @@ const fetchUserProfile = async () => {
 // Fetch top artists
 const fetchTopArtists = async () => {
   try {
-    const data = await getTopArtists()
+    const response = await fetch('https://api.spotify.com/v1/me/top/artists?limit=5', {
+      headers: {
+        'Authorization': `Bearer ${accessToken.value}`
+      }
+    })
+    const data = await response.json()
     topArtists.value = data.items
   } catch (error) {
     console.error('Error fetching top artists:', error)
@@ -117,7 +101,12 @@ const fetchTopArtists = async () => {
 // Fetch top tracks
 const fetchTopTracks = async () => {
   try {
-    const data = await getTopTracks()
+    const response = await fetch('https://api.spotify.com/v1/me/top/tracks?limit=5', {
+      headers: {
+        'Authorization': `Bearer ${accessToken.value}`
+      }
+    })
+    const data = await response.json()
     topTracks.value = data.items
   } catch (error) {
     console.error('Error fetching top tracks:', error)
@@ -127,7 +116,12 @@ const fetchTopTracks = async () => {
 // Fetch recently played
 const fetchRecentlyPlayed = async () => {
   try {
-    const data = await getRecentlyPlayed()
+    const response = await fetch('https://api.spotify.com/v1/me/player/recently-played?limit=5', {
+      headers: {
+        'Authorization': `Bearer ${accessToken.value}`
+      }
+    })
+    const data = await response.json()
     recentlyPlayed.value = data.items
   } catch (error) {
     console.error('Error fetching recently played:', error)

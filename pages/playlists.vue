@@ -15,13 +15,7 @@
       <div v-for="playlist in playlists" :key="playlist.id"
            class="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
            @click="openPlaylist(playlist)">
-        <img 
-          v-if="playlist.images?.length > 0" 
-          :src="playlist.images[0].url" 
-          :alt="playlist.name"
-          class="aspect-square w-full object-cover rounded-lg mb-4"
-        />
-        <div v-else class="aspect-square bg-gray-600 rounded-lg mb-4"></div>
+        <div class="aspect-square bg-gray-600 rounded-lg mb-4"></div>
         <h3 class="font-medium">{{ playlist.name }}</h3>
         <p class="text-sm text-gray-400">{{ playlist.tracks.total }} tracks</p>
       </div>
@@ -60,7 +54,6 @@
 import { ref, onMounted } from 'vue'
 
 const { accessToken } = useAuth()
-const { getUserPlaylists, getCurrentUser, createPlaylist } = useSpotifyApi()
 const playlists = ref([])
 const showCreateModal = ref(false)
 const newPlaylistName = ref('')
@@ -68,7 +61,12 @@ const newPlaylistName = ref('')
 // Fetch user's playlists
 const fetchPlaylists = async () => {
   try {
-    const data = await getUserPlaylists()
+    const response = await fetch('https://api.spotify.com/v1/me/playlists', {
+      headers: {
+        'Authorization': `Bearer ${accessToken.value}`
+      }
+    })
+    const data = await response.json()
     playlists.value = data.items
   } catch (error) {
     console.error('Error fetching playlists:', error)
@@ -85,10 +83,27 @@ const submitNewPlaylist = async () => {
 
   try {
     // First, get user ID
-    const userData = await getCurrentUser()
+    const userResponse = await fetch('https://api.spotify.com/v1/me', {
+      headers: {
+        'Authorization': `Bearer ${accessToken.value}`
+      }
+    })
+    const userData = await userResponse.json()
 
     // Create playlist
-    const data = await createPlaylist(userData.id, newPlaylistName.value)
+    const response = await fetch(`https://api.spotify.com/v1/users/${userData.id}/playlists`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken.value}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: newPlaylistName.value,
+        public: false
+      })
+    })
+
+    const data = await response.json()
     playlists.value.unshift(data)
     showCreateModal.value = false
     newPlaylistName.value = ''
@@ -98,7 +113,7 @@ const submitNewPlaylist = async () => {
 }
 
 // Open playlist
-const openPlaylist = (playlist: any) => {
+const openPlaylist = (playlist) => {
   navigateTo(`/playlist/${playlist.id}`)
 }
 
