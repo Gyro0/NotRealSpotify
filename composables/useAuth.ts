@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 // Create singleton state
 const accessToken = ref('')
 const refreshToken = ref('')
+const tokenExpiration = ref<number | null>(null)
 
 export const useAuth = () => {
   const config = useRuntimeConfig()
@@ -11,12 +12,15 @@ export const useAuth = () => {
   if (process.client && !accessToken.value) {
     const storedAccessToken = localStorage.getItem('spotify_access_token')
     const storedRefreshToken = localStorage.getItem('spotify_refresh_token')
+    const storedExpiration = localStorage.getItem('spotify_token_expiration')
     console.log('Initializing tokens from localStorage:', {
       hasAccessToken: !!storedAccessToken,
-      hasRefreshToken: !!storedRefreshToken
+      hasRefreshToken: !!storedRefreshToken,
+      hasExpiration: !!storedExpiration
     })
     accessToken.value = storedAccessToken || ''
     refreshToken.value = storedRefreshToken || ''
+    tokenExpiration.value = storedExpiration ? parseInt(storedExpiration) : null
   }
 
   // Watch for token changes and update localStorage
@@ -24,6 +28,13 @@ export const useAuth = () => {
     if (process.client && newToken) {
       console.log('Access token changed, updating localStorage')
       localStorage.setItem('spotify_access_token', newToken)
+      
+      // Set default expiration (3600 seconds/1 hour is Spotify's default)
+      if (tokenExpiration.value === null) {
+        const expiryTime = Date.now() + 3600 * 1000
+        tokenExpiration.value = expiryTime
+        localStorage.setItem('spotify_token_expiration', expiryTime.toString())
+      }
     }
   })
 
@@ -34,8 +45,20 @@ export const useAuth = () => {
     }
   })
 
-  const refreshAccessToken = async () => {
+  watch(tokenExpiration, (newExpiration) => {
+    if (process.client && newExpiration) {
+      localStorage.setItem('spotify_token_expiration', newExpiration.toString())
+    }
+  })
+
+  const refreshAccessToken = async (force = false) => {
     try {
+      // Only refresh if token is expired or force=true
+      if (!force && tokenExpiration.value && Date.now() < tokenExpiration.value) {
+        console.log('Token still valid, not refreshing')
+        return accessToken.value
+      }
+      
       console.log('Attempting to refresh token...')
       if (!refreshToken.value) {
         throw new Error('No refresh token available')
@@ -68,17 +91,44 @@ export const useAuth = () => {
       const data = await response.json()
       console.log('Token refresh successful')
       
-      // Update tokens
+      // Update tokens and expiration
       accessToken.value = data.access_token
       if (data.refresh_token) {
         refreshToken.value = data.refresh_token
       }
+      
+      // Set expiration based on expires_in value (default to 3600 if not provided)
+      const expiresIn = data.expires_in || 3600
+      tokenExpiration.value = Date.now() + (expiresIn * 1000)
 
       return data.access_token
     } catch (error) {
       console.error('Error refreshing token:', error)
       logout()
       throw error
+    }
+  }
+
+  const setupAutoRefresh = () => {
+    if (process.client && accessToken.value && tokenExpiration.value) {
+      const remainingTime = tokenExpiration.value - Date.now()
+      // Refresh when 5 minutes remaining
+      const refreshBuffer = 5 * 60 * 1000
+      const timeToRefresh = Math.max(0, remainingTime - refreshBuffer)
+      
+      console.log(`Token auto-refresh scheduled in ${timeToRefresh/1000} seconds`)
+      
+      setTimeout(async () => {
+        if (accessToken.value) { // Double-check we still have a token
+          try {
+            await refreshAccessToken()
+            // Set up next refresh
+            setupAutoRefresh()
+          } catch (error) {
+            console.error('Auto-refresh failed:', error)
+          }
+        }
+      }, timeToRefresh)
     }
   }
 
@@ -162,14 +212,20 @@ export const useAuth = () => {
       }
 
       console.log('Setting tokens...')
-      // Update tokens
+      // Update tokens and expiration
       accessToken.value = data.access_token
       refreshToken.value = data.refresh_token
+      const expiresIn = data.expires_in || 3600
+      tokenExpiration.value = Date.now() + (expiresIn * 1000)
 
       console.log('Authentication successful, token set:', {
         hasAccessToken: !!accessToken.value,
-        hasRefreshToken: !!refreshToken.value
+        hasRefreshToken: !!refreshToken.value,
+        hasExpiration: !!tokenExpiration.value
       })
+
+      // Set up auto-refresh
+      setupAutoRefresh()
     } catch (error) {
       console.error('Error during authentication:', error)
       throw error
@@ -180,9 +236,11 @@ export const useAuth = () => {
     console.log('Logging out...')
     accessToken.value = ''
     refreshToken.value = ''
+    tokenExpiration.value = null
     if (process.client) {
       localStorage.removeItem('spotify_access_token')
       localStorage.removeItem('spotify_refresh_token')
+      localStorage.removeItem('spotify_token_expiration')
     }
     navigateTo('/')
   }
@@ -204,6 +262,8 @@ export const useAuth = () => {
     isAuthenticated,
     accessToken,
     refreshToken,
-    refreshAccessToken
+    refreshAccessToken,
+    setupAutoRefresh,
+    tokenExpiration
   }
-} 
+}
