@@ -47,16 +47,20 @@
         <div class="space-y-2">
           <div 
             v-for="track in tracks" 
-            :key="track.id" 
+            :key="track?.id || Math.random()" 
             class="flex items-center justify-between p-2 rounded-md hover:bg-[#282828] cursor-pointer"
-            @click="navigateToTrack(track.id)"
+            @click="track?.id && navigateToTrack(track.id)"
           >
             <div class="flex items-center space-x-4">
-              <img :src="track.album?.images?.[0]?.url" :alt="track.name" class="w-12 h-12">
+              <img 
+                :src="track?.album?.images?.[0]?.url" 
+                :alt="track?.name || 'Unknown Track'" 
+                class="w-12 h-12"
+              >
               <div>
-                <h3 class="font-medium">{{ track.name }}</h3>
+                <h3 class="font-medium">{{ track?.name || 'Unknown Track' }}</h3>
                 <p class="text-sm text-gray-400">
-                  <template v-if="track.artists && track.artists.length > 0">
+                  <template v-if="track?.artists?.length">
                     <span 
                       v-for="(artist, index) in track.artists" 
                       :key="artist?.id || index"
@@ -70,7 +74,7 @@
                 </p>
               </div>
             </div>
-            <div class="text-sm text-gray-400">{{ formatDuration(track.duration_ms) }}</div>
+            <div class="text-sm text-gray-400">{{ track?.duration_ms ? formatDuration(track.duration_ms) : '0:00' }}</div>
           </div>
         </div>
       </div>
@@ -85,7 +89,11 @@
             class="bg-[#181818] p-4 rounded-md hover:bg-[#282828] cursor-pointer"
             @click="artist?.id && navigateToArtist(artist.id)"
           >
-            <img :src="artist?.images?.[0]?.url" :alt="artist?.name || 'Unknown Artist'" class="w-full aspect-square rounded-full mb-4">
+            <img 
+              :src="artist?.images?.[0]?.url" 
+              :alt="artist?.name || 'Unknown Artist'" 
+              class="w-full aspect-square rounded-full mb-4"
+            >
             <h3 class="font-medium truncate">{{ artist?.name || 'Unknown Artist' }}</h3>
             <p class="text-sm text-gray-400">Artist</p>
           </div>
@@ -144,6 +152,16 @@ interface SpotifyArtist {
   id: string
 }
 
+interface SpotifyTrack {
+  id: string
+  name: string
+  duration_ms: number
+  album?: {
+    images?: Array<{ url: string }>
+  }
+  artists?: Array<SpotifyArtist>
+}
+
 const router = useRouter()
 const searchQuery = ref('')
 const loading = ref(false)
@@ -152,8 +170,8 @@ const searchResults = ref<any>(null)
 const { search } = useSpotifySearch()
 
 const userProfiles = computed(() => searchResults.value?.users?.items || [])
-const tracks = computed(() => searchResults.value?.tracks?.items || [])
-const artists = computed(() => searchResults.value?.artists?.items || [])
+const tracks = computed(() => (searchResults.value?.tracks?.items || []).filter((track: SpotifyTrack) => track?.id))
+const artists = computed(() => (searchResults.value?.artists?.items || []).filter((artist: SpotifyArtist) => artist?.id))
 const albums = computed(() => searchResults.value?.albums?.items || [])
 const playlists = computed(() => searchResults.value?.playlists?.items || [])
 
@@ -200,6 +218,7 @@ const handleSearch = async () => {
 }
 
 const formatDuration = (ms: number) => {
+  if (!ms) return '0:00'
   const minutes = Math.floor(ms / 60000)
   const seconds = Math.floor((ms % 60000) / 1000)
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
