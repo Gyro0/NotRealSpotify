@@ -29,7 +29,12 @@
       <div v-if="userProfiles.length > 0" class="mb-8">
         <h2 class="text-2xl font-bold mb-4">Profiles</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div v-for="profile in userProfiles" :key="profile.id" class="bg-[#181818] p-4 rounded-md hover:bg-[#282828]">
+          <div 
+            v-for="profile in userProfiles" 
+            :key="profile.id" 
+            class="bg-[#181818] p-4 rounded-md hover:bg-[#282828] cursor-pointer"
+            @click="profile?.id && navigateToUser(profile.id)"
+          >
             <div class="flex items-center space-x-4">
               <img :src="profile.images?.[0]?.url || '/default-avatar.png'" :alt="profile.display_name" class="w-16 h-16 rounded-full">
               <div>
@@ -126,6 +131,7 @@
             v-for="album in paginatedAlbums" 
             :key="album?.id || Math.random()" 
             class="bg-[#181818] p-4 rounded-md hover:bg-[#282828] cursor-pointer"
+            @click="album?.id && navigateToAlbum(album.id)"
           >
             <img 
               :src="album?.images?.[0]?.url" 
@@ -155,6 +161,7 @@
             v-for="playlist in paginatedPlaylists" 
             :key="playlist?.id || Math.random()" 
             class="bg-[#181818] p-4 rounded-md hover:bg-[#282828] cursor-pointer"
+            @click="playlist?.id && navigateToPlaylist(playlist.id)"
           >
             <img 
               :src="playlist?.images?.[0]?.url" 
@@ -298,10 +305,28 @@ const navigateToTrack = (id: string) => {
   }
 }
 
+const navigateToAlbum = (id: string) => {
+  if (id) {
+    navigateTo(`/album/${id}`)
+  }
+}
+
+const navigateToPlaylist = (id: string) => {
+  if (id) {
+    navigateTo(`/playlist/${id}`)
+  }
+}
+
+const navigateToUser = (id: string) => {
+  if (id) {
+    navigateTo(`/user/${id}`)
+  }
+}
+
 const formatDuration = (ms: number) => {
   if (!ms) return '0:00'
   const minutes = Math.floor(ms / 60000)
   const seconds = Math.floor((ms % 60000) / 1000)
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
-</script> 
+</script>
