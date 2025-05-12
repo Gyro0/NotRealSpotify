@@ -45,12 +45,29 @@
       <div v-if="tracks.length > 0" class="mb-8">
         <h2 class="text-2xl font-bold mb-4">Songs</h2>
         <div class="space-y-2">
-          <div v-for="track in tracks" :key="track.id" class="flex items-center justify-between p-2 rounded-md hover:bg-[#282828]">
+          <div 
+            v-for="track in tracks" 
+            :key="track.id" 
+            class="flex items-center justify-between p-2 rounded-md hover:bg-[#282828] cursor-pointer"
+            @click="navigateToTrack(track.id)"
+          >
             <div class="flex items-center space-x-4">
               <img :src="track.album?.images?.[0]?.url" :alt="track.name" class="w-12 h-12">
               <div>
                 <h3 class="font-medium">{{ track.name }}</h3>
-                <p class="text-sm text-gray-400">{{ track.artists?.map((a: SpotifyArtist) => a.name).join(', ') }}</p>
+                <p class="text-sm text-gray-400">
+                  <template v-if="track.artists && track.artists.length > 0">
+                    <span 
+                      v-for="(artist, index) in track.artists" 
+                      :key="artist?.id || index"
+                      class="hover:underline cursor-pointer"
+                      @click.stop="artist?.id && navigateToArtist(artist.id)"
+                    >
+                      {{ artist?.name || 'Unknown Artist' }}{{ index < track.artists.length - 1 ? ', ' : '' }}
+                    </span>
+                  </template>
+                  <span v-else>Unknown Artist</span>
+                </p>
               </div>
             </div>
             <div class="text-sm text-gray-400">{{ formatDuration(track.duration_ms) }}</div>
@@ -62,9 +79,14 @@
       <div v-if="artists.length > 0" class="mb-8">
         <h2 class="text-2xl font-bold mb-4">Artists</h2>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          <div v-for="artist in artists" :key="artist.id" class="bg-[#181818] p-4 rounded-md hover:bg-[#282828]">
-            <img :src="artist.images?.[0]?.url" :alt="artist.name" class="w-full aspect-square rounded-full mb-4">
-            <h3 class="font-medium truncate">{{ artist.name }}</h3>
+          <div 
+            v-for="artist in artists" 
+            :key="artist?.id || Math.random()" 
+            class="bg-[#181818] p-4 rounded-md hover:bg-[#282828] cursor-pointer"
+            @click="artist?.id && navigateToArtist(artist.id)"
+          >
+            <img :src="artist?.images?.[0]?.url" :alt="artist?.name || 'Unknown Artist'" class="w-full aspect-square rounded-full mb-4">
+            <h3 class="font-medium truncate">{{ artist?.name || 'Unknown Artist' }}</h3>
             <p class="text-sm text-gray-400">Artist</p>
           </div>
         </div>
@@ -115,12 +137,14 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useSpotifySearch } from '~/composables/useSpotifySearch'
+import { useRouter } from 'vue-router'
 
 interface SpotifyArtist {
   name: string
   id: string
 }
 
+const router = useRouter()
 const searchQuery = ref('')
 const loading = ref(false)
 const searchResults = ref<any>(null)
@@ -149,9 +173,27 @@ const handleSearch = async () => {
 
   loading.value = true
   try {
-    searchResults.value = await search(searchQuery.value)
+    const results = await search(searchQuery.value)
+    if (results) {
+      searchResults.value = results
+    } else {
+      searchResults.value = {
+        users: { items: [] },
+        tracks: { items: [] },
+        artists: { items: [] },
+        albums: { items: [] },
+        playlists: { items: [] }
+      }
+    }
   } catch (error) {
     console.error('Search error:', error)
+    searchResults.value = {
+      users: { items: [] },
+      tracks: { items: [] },
+      artists: { items: [] },
+      albums: { items: [] },
+      playlists: { items: [] }
+    }
   } finally {
     loading.value = false
   }
@@ -161,5 +203,17 @@ const formatDuration = (ms: number) => {
   const minutes = Math.floor(ms / 60000)
   const seconds = Math.floor((ms % 60000) / 1000)
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
+}
+
+const navigateToArtist = (id: string) => {
+  if (id) {
+    router.push(`/artist/${id}`)
+  }
+}
+
+const navigateToTrack = (id: string) => {
+  if (id) {
+    router.push(`/track/${id}`)
+  }
 }
 </script> 
