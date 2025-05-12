@@ -31,11 +31,11 @@ const updateNavigationState = () => {
 }
 
 const goBack = () => {
-  navigateTo(-1 as any) // Nuxt 3 navigateTo can take a number for history navigation but needs type assertion or specific handling if directly not supported for numbers.
+  navigateTo(-1 as any) 
 }
 
 const goForward = () => {
-  navigateTo(1 as any) // Similar to goBack, ensure this usage is correct for Nuxt 3 or adapt as needed.
+  navigateTo(1 as any) 
 }
 
 onMounted(() => {
