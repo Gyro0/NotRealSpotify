@@ -1,6 +1,31 @@
-# Nuxt Minimal Starter
+# Not Real Spotify - Spotify Clone
+## Deployment link 
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+https://not-real-spotify.vercel.app
+
+
+A Spotify clone built with Nuxt 3, Vue 3, and TailwindCSS. This application allows users to connect to their real Spotify accounts, browse music, create and manage playlists, and play music through the Spotify Web Playback SDK.
+
+
+## Features
+
+- Spotify OAuth authentication
+- Browse recently played tracks
+- Search for songs, artists, albums, and playlists
+- View artist details and top tracks
+- View and play albums
+- Create, edit, and delete playlists
+- Manage playlist tracks
+- User profile management
+- Web playback controls using Spotify's Web Playback SDK
+
+## Tech Stack
+
+- **Frontend Framework**: Nuxt 3 / Vue 3
+- **Styling**: TailwindCSS
+- **HTTP Client**: Axios
+- **TypeScript**
+- **Authentication**: Spotify OAuth flow
 
 ## Setup
 
@@ -72,4 +97,16 @@ yarn preview
 bun run preview
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+## Project Configuration
+
+Before running the application, you need to configure your Spotify API credentials in `nuxt.config.ts`:
+
+```typescript
+runtimeConfig: {
+  public: {      
+    spotifyClientId: "YOUR_SPOTIFY_CLIENT_ID",
+    spotifyRedirectUri: 'YOUR_REDIRECT_URI',
+    spotifyClientSecret: "YOUR_SPOTIFY_CLIENT_SECRET"
+  }
+}
+```
