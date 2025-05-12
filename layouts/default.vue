@@ -63,15 +63,15 @@
           </button>
         </div>
         <div v-else class="space-y-4">
-          <NuxtLink 
-            to="/login" 
-            class="flex items-center space-x-3 text-gray-400 hover:text-white p-2"
+          <button 
+            @click="login" 
+            class="w-full flex items-center space-x-3 text-gray-400 hover:text-white p-2"
           >
             <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
               <path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z"/>
             </svg>
             <span>Login</span>
-          </NuxtLink>
+          </button>
         </div>
       </div>
     </div>
@@ -90,7 +90,7 @@
 import { useAuth } from '~/composables/useAuth'
 import { useSpotifyPlayback } from '~/composables/useSpotifyPlayback'
 
-const { isAuthenticated, logout } = useAuth()
+const { isAuthenticated, logout, login } = useAuth()
 const { 
   isPlaying, 
   currentTrack, 
@@ -106,4 +106,4 @@ const {
 .router-link-active {
   @apply text-white;
 }
-</style> 
+</style>

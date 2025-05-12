@@ -42,7 +42,7 @@
           <div class="flex items-center space-x-2 text-gray-400">
             <span v-for="(artist, index) in album.artists" :key="artist.id">
               <a 
-                @click="navigateToArtist(artist.id)"
+                @click="goToArtist(artist.id)"
                 class="hover:text-white cursor-pointer transition-colors underline hover:no-underline"
               >
                 {{ artist.name }}
@@ -100,7 +100,7 @@
             <p class="text-sm text-gray-400 truncate">
               <span v-for="(artist, index) in track.artists" :key="artist.id">
                 <a 
-                  @click.stop="navigateToArtist(artist.id)"
+                  @click.stop="goToArtist(artist.id)"
                   class="hover:text-white cursor-pointer transition-colors underline hover:no-underline"
                 >
                   {{ artist.name }}
@@ -120,7 +120,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, navigateTo } from '#app'
+import { useAuth } from '~/composables/useAuth'
+import { useSpotifyPlayback } from '~/composables/useSpotifyPlayback'
 
 interface SpotifyImage {
   url: string
@@ -152,7 +154,6 @@ interface Album {
 }
 
 const route = useRoute()
-const router = useRouter()
 const { accessToken, refreshAccessToken } = useAuth()
 const { playTrack } = useSpotifyPlayback()
 
@@ -168,8 +169,8 @@ const formatDuration = (ms: number) => {
 }
 
 // Navigate to artist page
-const navigateToArtist = (artistId: string) => {
-  router.push(`/artist/${artistId}`)
+const goToArtist = (artistId: string) => {
+  navigateTo(`/artist/${artistId}`)
 }
 
 // Play entire album
@@ -240,4 +241,4 @@ const fetchAlbum = async () => {
 onMounted(async () => {
   await fetchAlbum()
 })
-</script> 
+</script>

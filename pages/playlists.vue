@@ -89,22 +89,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
+import type { SpotifyPlaylist } from '~/types/spotify'
 
-interface Playlist {
-  id: string
-  name: string
-  images: Array<{ url: string }>
-  tracks: {
-    total: number
-  }
-}
-
-const router = useRouter()
 const { accessToken, refreshAccessToken } = useAuth()
-
-const playlists = ref<Playlist[]>([])
+const playlists = ref<SpotifyPlaylist[]>([])
 const showCreateModal = ref(false)
 const newPlaylistName = ref('')
 const newPlaylistDescription = ref('')
@@ -141,7 +130,11 @@ const fetchPlaylists = async () => {
 }
 
 const createPlaylist = async () => {
-  if (!accessToken.value) return
+  if (!accessToken.value) {
+    console.error('Access token is not available.')
+    navigateTo('/')
+    return
+  }
 
   isCreating.value = true
   try {
@@ -194,10 +187,10 @@ const createPlaylist = async () => {
 }
 
 const navigateToPlaylist = (id: string) => {
-  router.push(`/playlist/${id}`)
+  navigateTo(`/playlist/${id}`)
 }
 
 onMounted(() => {
   fetchPlaylists()
 })
-</script> 
+</script>

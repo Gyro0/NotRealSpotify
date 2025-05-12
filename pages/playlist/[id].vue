@@ -303,22 +303,22 @@
           </div>
 
           <!-- Action Buttons -->
-          <div class="flex justify-end pt-4">
-            <div class="space-x-2">
-              <button
-                type="button"
-                @click="closeEditModal"
-                class="bg-gray-700 text-white px-6 py-2 rounded-full hover:bg-gray-600 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                class="bg-green-500 text-white px-6 py-2 rounded-full hover:bg-green-600 transition-colors"
-              >
-                Save Changes
-              </button>
-            </div>
+          <div class="flex flex-row gap-2.5">
+            <button
+              type="button"
+              @click="closeEditModal"
+              class="bg-gray-700 text-white px-6 py-2 rounded-full hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="bg-green-500 text-white px-6 py-2 rounded-full hover:bg-green-600 transition-colors flex items-center space-x-2"
+              :disabled="isLoading"
+            >
+              <div v-if="isLoading" class="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+              <span>{{ isLoading ? 'Saving...' : 'Save Changes' }}</span>
+            </button>
           </div>
         </form>
       </div>
@@ -328,7 +328,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 import { useSpotifyPlayback } from '~/composables/useSpotifyPlayback'
 
@@ -572,6 +571,9 @@ const closeEditModal = () => {
 // Update playlist
 const updatePlaylist = async () => {
   try {
+    // Show loading state
+    isLoading.value = true
+
     // First check if we have permission to modify this playlist
     const playlistResponse = await fetch(`https://api.spotify.com/v1/playlists/${route.params.id}`, {
       headers: {
@@ -597,6 +599,10 @@ const updatePlaylist = async () => {
     })
     
     if (!meResponse.ok) {
+      if (meResponse.status === 401) {
+        await refreshAccessToken()
+        return updatePlaylist()
+      }
       throw new Error('Failed to fetch user details')
     }
     
@@ -625,6 +631,10 @@ const updatePlaylist = async () => {
     )
 
     if (!response.ok) {
+      if (response.status === 401) {
+        await refreshAccessToken()
+        return updatePlaylist()
+      }
       throw new Error('Failed to update playlist')
     }
 
@@ -664,20 +674,45 @@ const updatePlaylist = async () => {
         )
 
         if (!imageUpdateResponse.ok) {
-          console.warn('Failed to update playlist image, but playlist details were updated')
+          if (imageUpdateResponse.status === 401) {
+            await refreshAccessToken()
+            // Retry the image update with the new token
+            const retryResponse = await fetch(
+              `https://api.spotify.com/v1/playlists/${route.params.id}/images`,
+              {
+                method: 'PUT',
+                headers: {
+                  'Authorization': `Bearer ${accessToken.value}`,
+                  'Content-Type': 'image/jpeg'
+                },
+                body: base64Image
+              }
+            )
+            if (!retryResponse.ok) {
+              throw new Error('Failed to update playlist image after token refresh')
+            }
+          } else {
+            const errorText = await imageUpdateResponse.text()
+            throw new Error(`Failed to update playlist image: ${errorText}`)
+          }
         }
       } catch (imageError) {
-        console.warn('Error updating playlist image:', imageError)
-        // Continue even if image update fails
+        console.error('Error updating playlist image:', imageError)
+        throw new Error(`Failed to update playlist image: ${imageError instanceof Error ? imageError.message : 'Unknown error'}`)
       }
     }
 
     // Refresh playlist data
     await fetchPlaylist()
     closeEditModal()
+    
+    // Show success message
+    alert('Playlist updated successfully!')
   } catch (error) {
     console.error('Error updating playlist:', error)
     alert(error instanceof Error ? error.message : 'Failed to update playlist. Please try again.')
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -700,4 +735,4 @@ onMounted(async () => {
     }
   }
 })
-</script> 
+</script>

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="flex items-center space-x-6 mb-8">
+    <div v-if="userProfile" class="flex items-center space-x-6 mb-8">
       <img 
         v-if="userProfile.images?.[0]?.url" 
         :src="userProfile.images[0].url" 
@@ -16,6 +16,10 @@
         <h1 class="text-3xl font-bold">{{ userProfile.display_name }}</h1>
         <p class="text-gray-400">{{ userProfile.followers?.total }} followers</p>
       </div>
+    </div>
+    
+    <div v-else class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
     </div>
 
     <!-- User Stats -->
@@ -109,45 +113,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-
-interface SpotifyImage {
-  url: string
-}
-
-interface SpotifyArtist {
-  id: string
-  name: string
-  images: SpotifyImage[]
-}
-
-interface SpotifyTrack {
-  id: string
-  name: string
-  album: {
-    images: SpotifyImage[]
-  }
-  artists: SpotifyArtist[]
-}
-
-interface SpotifyUserProfile {
-  display_name: string
-  images: SpotifyImage[]
-  followers: {
-    total: number
-  }
-}
-
-interface RecentlyPlayedItem {
-  track: SpotifyTrack
-}
+import { useAuth } from '~/composables/useAuth'
+import type { UserProfile, RecentlyPlayedItem, TopArtist, TopTrack } from '~/types/spotify'
 
 const { accessToken, logout } = useAuth()
-const userProfile = ref<SpotifyUserProfile>({} as SpotifyUserProfile)
-const topArtists = ref<SpotifyArtist[]>([])
-const topTracks = ref<SpotifyTrack[]>([])
+const userProfile = ref<UserProfile | null>(null)
+const topArtists = ref<TopArtist[]>([])
+const topTracks = ref<TopTrack[]>([])
 const recentlyPlayed = ref<RecentlyPlayedItem[]>([])
-const router = useRouter()
 
 // Fetch user profile
 const fetchUserProfile = async () => {
@@ -283,11 +256,11 @@ const fetchRecentlyPlayed = async () => {
 
 // Add navigation functions
 const navigateToArtist = (artistId: string) => {
-  router.push(`/artist/${artistId}`)
+  navigateTo(`/artist/${artistId}`)
 }
 
 const navigateToTrack = (trackId: string) => {
-  router.push(`/track/${trackId}`)
+  navigateTo(`/track/${trackId}`)
 }
 
 // Fetch all data when component is mounted
@@ -303,7 +276,7 @@ onMounted(async () => {
     ])
   } else {
     console.log('No access token available, redirecting to login...')
-    router.push('/')
+    navigateTo('/')
   }
 })
-</script> 
+</script>

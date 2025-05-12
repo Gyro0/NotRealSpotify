@@ -6,10 +6,9 @@ const refreshToken = ref('')
 
 export const useAuth = () => {
   const config = useRuntimeConfig()
-  const nuxtApp = useNuxtApp()
 
   // Initialize tokens from localStorage if available
-  if (nuxtApp.$client && !accessToken.value) {
+  if (process.client && !accessToken.value) {
     const storedAccessToken = localStorage.getItem('spotify_access_token')
     const storedRefreshToken = localStorage.getItem('spotify_refresh_token')
     console.log('Initializing tokens from localStorage:', {
@@ -22,14 +21,14 @@ export const useAuth = () => {
 
   // Watch for token changes and update localStorage
   watch(accessToken, (newToken) => {
-    if (nuxtApp.$client && newToken) {
+    if (process.client && newToken) {
       console.log('Access token changed, updating localStorage')
       localStorage.setItem('spotify_access_token', newToken)
     }
   })
 
   watch(refreshToken, (newToken) => {
-    if (nuxtApp.$client && newToken) {
+    if (process.client && newToken) {
       console.log('Refresh token changed, updating localStorage')
       localStorage.setItem('spotify_refresh_token', newToken)
     }
@@ -110,7 +109,7 @@ export const useAuth = () => {
       // Debug logging
       console.log('Generated Auth URL:', authUrl)
       
-      if (typeof window !== 'undefined') {
+      if (process.client) {
         window.location.href = authUrl
       }
     } catch (error) {
@@ -181,6 +180,10 @@ export const useAuth = () => {
     console.log('Logging out...')
     accessToken.value = ''
     refreshToken.value = ''
+    if (process.client) {
+      localStorage.removeItem('spotify_access_token')
+      localStorage.removeItem('spotify_refresh_token')
+    }
     navigateTo('/')
   }
 

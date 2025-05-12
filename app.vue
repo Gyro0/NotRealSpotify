@@ -1,9 +1,8 @@
 <template>
   <div>
-    <NuxtLayout v-if="isAuthenticated">
+    <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
-    <NuxtPage v-else />
   </div>
 </template>
 
@@ -13,7 +12,7 @@ const route = useRoute()
 
 // Redirect to login if not authenticated and not on login/callback page
 watch(() => route.path, (path) => {
-  if (!isAuthenticated && path !== '/' && path !== '/callback') {
+  if (!isAuthenticated() && path !== '/' && path !== '/callback') {
     navigateTo('/')
   }
 }, { immediate: true })

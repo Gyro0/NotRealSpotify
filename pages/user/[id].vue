@@ -23,7 +23,7 @@
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         <div v-for="playlist in playlists" :key="playlist.id" 
           class="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
-          @click="navigateToPlaylist(playlist.id)"
+          @click="viewPlaylist(playlist.id)"
         >
           <img 
             v-if="playlist.images?.[0]?.url" 
@@ -40,9 +40,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted, computed } from 'vue'
 import { useAuth } from '~/composables/useAuth'
+import { useRoute, navigateTo } from '#app'
 
 interface SpotifyImage {
   url: string
@@ -66,9 +66,9 @@ interface SpotifyPlaylist {
   }
 }
 
-const route = useRoute()
-const router = useRouter()
 const { accessToken, refreshAccessToken } = useAuth()
+const route = useRoute()
+const userId = computed(() => route.params.id as string)
 
 const userProfile = ref<SpotifyUserProfile>({} as SpotifyUserProfile)
 const playlists = ref<SpotifyPlaylist[]>([])
@@ -78,8 +78,7 @@ const error = ref('')
 // Fetch user profile
 const fetchUserProfile = async () => {
   try {
-    const userId = route.params.id
-    const response = await fetch(`https://api.spotify.com/v1/users/${userId}`, {
+    const response = await fetch(`https://api.spotify.com/v1/users/${userId.value}`, {
       headers: {
         'Authorization': `Bearer ${accessToken.value}`
       }
@@ -104,8 +103,7 @@ const fetchUserProfile = async () => {
 // Fetch user's public playlists
 const fetchUserPlaylists = async () => {
   try {
-    const userId = route.params.id
-    const response = await fetch(`https://api.spotify.com/v1/users/${userId}/playlists?limit=50`, {
+    const response = await fetch(`https://api.spotify.com/v1/users/${userId.value}/playlists?limit=50`, {
       headers: {
         'Authorization': `Bearer ${accessToken.value}`
       }
@@ -128,8 +126,8 @@ const fetchUserPlaylists = async () => {
 }
 
 // Navigation functions
-const navigateToPlaylist = (id: string) => {
-  router.push(`/playlist/${id}`)
+const viewPlaylist = (playlistId: string) => {
+  navigateTo(`/playlist/${playlistId}`)
 }
 
 onMounted(async () => {
@@ -150,4 +148,4 @@ onMounted(async () => {
     isLoading.value = false
   }
 })
-</script> 
+</script>

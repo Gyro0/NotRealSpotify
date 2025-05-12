@@ -4,10 +4,8 @@
     <div v-if="!isAuthenticated()" class="flex flex-col items-center justify-center min-h-screen ">
       <!-- Spotify Logo -->
       <div class="mb-12">
-        <svg class="w-64" viewBox="0 0 1134 340" xmlns="http://www.w3.org/2000/svg">
           <img src="/spotify-logo.png" alt="Spotify" class="w-64 h-64" />
 
-        </svg>
       </div>
 
       <div class="text-center max-w-md">

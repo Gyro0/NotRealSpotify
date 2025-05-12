@@ -15,18 +15,15 @@ export default defineNuxtConfig({
       spotifyClientSecret: "f748052696b24613a6b3a6cdea8cf61a"
     }
   },
-  routeRules: {
-    '/.well-known/**': { static: true }
-  },
   app: {
     head: {
-      title: 'Spotify Clone',
+      title: 'Not Real Spotify',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' }
       ],
       link: [
-        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+        { rel: 'icon', type: 'image/png', href: '/spotify-logo.png' }
       ]
     }
   }

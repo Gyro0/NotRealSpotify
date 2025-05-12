@@ -21,9 +21,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
 
-const router = useRouter()
 const canGoBack = ref(false)
 const canGoForward = ref(false)
 
@@ -33,11 +31,11 @@ const updateNavigationState = () => {
 }
 
 const goBack = () => {
-  router.back()
+  navigateTo(-1 as any) // Nuxt 3 navigateTo can take a number for history navigation but needs type assertion or specific handling if directly not supported for numbers.
 }
 
 const goForward = () => {
-  router.forward()
+  navigateTo(1 as any) // Similar to goBack, ensure this usage is correct for Nuxt 3 or adapt as needed.
 }
 
 onMounted(() => {
@@ -48,4 +46,4 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('popstate', updateNavigationState)
 })
-</script> 
+</script>
