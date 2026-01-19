@@ -10,9 +10,9 @@ export default defineNuxtConfig({
   ],
   runtimeConfig: {
     public: {      
-      spotifyClientId: "05f7580aedcf4887a671145c70249399",
-      spotifyRedirectUri: 'https://not-real-spotify.vercel.app/callback',
-      spotifyClientSecret: "f748052696b24613a6b3a6cdea8cf61a"
+      spotifyClientId: "spotifyClientId",
+      spotifyRedirectUri: 'https://YOURLINK/callback',
+      spotifyClientSecret: "spotifyClientSecret"
     }
   },
   app: {
